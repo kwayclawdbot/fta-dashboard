@@ -327,7 +327,7 @@ function StatWell({ label, value }: { label: string; value: string }) {
       <p className="font-mono text-[9px] font-semibold uppercase leading-none tracking-[0.1em] text-soft">
         {label}
       </p>
-      <p className="mt-1.5 font-display text-[15px] font-extrabold tabular-nums leading-none text-ink">
+      <p className="mt-1.5 font-mono text-[15px] font-semibold tabular-nums leading-none text-ink">
         {value}
       </p>
     </div>
@@ -653,7 +653,7 @@ export default function ClubStockHead({
       {/* ── the mark ──────────────────────────────────────────────────────── */}
       <div className="mt-4">
         {shownPrice != null ? (
-          <p className="font-display text-[34px] font-extrabold leading-none tracking-tight tabular-nums text-ink">
+          <p className="font-mono text-[34px] font-bold leading-none tracking-tight tabular-nums text-ink">
             {money(shownPrice)}
           </p>
         ) : quoteResolved ? (
@@ -665,7 +665,7 @@ export default function ClubStockHead({
           />
         )}
         {chgPct != null && (
-          <p className="mt-2 text-[13px] font-semibold tabular-nums">
+          <p className="mt-2 font-mono text-[13px] font-semibold tabular-nums">
             <span className={up ? "text-price-up" : "text-price-down"}>
               {up ? "+" : "−"}
               {chg != null ? ` ${Math.abs(chg).toFixed(2)}` : ""} ({up ? "+" : "−"}
@@ -710,11 +710,13 @@ export default function ClubStockHead({
         <Card radius="md" className="mt-5 px-4 py-3.5">
           <p className="text-[13px] font-bold text-ink">Community Sentiment</p>
           <div className="mt-2 flex items-baseline justify-between gap-3">
-            <p className="font-display text-[20px] font-extrabold leading-none tracking-tight">
-              <span className="text-ink">{bullPct}%</span>{" "}
-              <span className="text-price-up">Bullish</span>
+            <p className="text-[20px] font-extrabold leading-none tracking-tight">
+              <span className="font-mono font-bold tabular-nums text-ink">{bullPct}%</span>{" "}
+              <span className="font-display text-price-up">Bullish</span>
             </p>
-            <p className="text-[11px] font-semibold text-soft">{bearPct}% Bearish</p>
+            <p className="text-[11px] font-semibold text-soft">
+              <span className="font-mono tabular-nums">{bearPct}%</span> Bearish
+            </p>
           </div>
           <div
             className="mt-3 flex h-2.5 overflow-hidden rounded-full bg-sand"

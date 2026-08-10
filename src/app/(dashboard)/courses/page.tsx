@@ -673,7 +673,10 @@ function FreeCoursesView({
 }) {
   const totalLocked = lockedCourses.reduce((n, c) => n + c.lockedCount, 0);
   return (
-    <div className="max-w-5xl mx-auto space-y-8 pb-12">
+    /* CLUB: uneven terminal rhythm (mast→sampler 28px, sampler→library 28px
+       via section margins below) — no uniform space-y stack. FAMILY/free
+       default render: original wrapper, byte-identical. */
+    <div className={club ? "max-w-5xl mx-auto pb-12" : "max-w-5xl mx-auto space-y-8 pb-12"}>
       {club ? (
         <header>
           <h1 className="font-display text-[clamp(28px,8vw,34px)] font-black uppercase leading-[0.9] tracking-[-0.04em] text-ink">
@@ -700,7 +703,7 @@ function FreeCoursesView({
       )}
 
       {/* Free sampler — fully playable */}
-      <section>
+      <section className={club ? "mt-7" : undefined}>
         {club ? (
           <h2 className="mb-3 text-[13px] font-bold uppercase tracking-[0.06em] text-ink">
             Free lessons — start here
@@ -761,7 +764,7 @@ function FreeCoursesView({
 
       {/* The full library — locked */}
       {lockedCourses.length > 0 && (
-        <section>
+        <section className={club ? "mt-7" : undefined}>
           {club ? (
             <h2 className="mb-3 flex items-center gap-2 text-[13px] font-bold uppercase tracking-[0.06em] text-ink">
               The full library
@@ -831,7 +834,13 @@ function FreeCoursesView({
       )}
 
       {/* Upsell */}
-      <UpsellCard context="courses" variant="band" />
+      {club ? (
+        <div className="mt-8">
+          <UpsellCard context="courses" variant="band" />
+        </div>
+      ) : (
+        <UpsellCard context="courses" variant="band" />
+      )}
     </div>
   );
 }

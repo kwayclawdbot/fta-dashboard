@@ -117,7 +117,11 @@ export default function LoginPage() {
   }
 
   return (
+    // `entry-card`: inert in the warm-light render; on the club terminal
+    // (mode=club + theme=dark) it becomes the law's ONE clean --card panel
+    // (globals.css ENTRY TERMINAL) so the form never floats on raw black.
     <m.div
+      className="entry-card"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.3 }}
@@ -221,7 +225,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={inviteLoading}
-              className="f0-frame f0-focus f0-press inline-flex w-full items-center justify-center gap-2 rounded-2xl py-3 font-display text-[14px] font-bold text-gold-700 transition-colors disabled:opacity-50"
+              className="entry-cta f0-frame f0-focus f0-press inline-flex w-full items-center justify-center gap-2 rounded-2xl py-3 font-display text-[14px] font-bold text-gold-700 transition-colors disabled:opacity-50"
               style={{
                 background:
                   "color-mix(in srgb, var(--accent-solid) 9%, transparent)",

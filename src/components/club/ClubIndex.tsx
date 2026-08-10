@@ -156,7 +156,7 @@ function IndexRow({ row }: { row: ClubIndexRow }) {
 
         {/* Conviction — dominant-side share (lime when bull, ink when bear). */}
         <span
-          className={`ml-auto shrink-0 text-right font-display text-[14px] font-extrabold tabular-nums tracking-[-0.02em] sm:ml-0 ${
+          className={`ml-auto shrink-0 text-right font-mono text-[13px] font-semibold tabular-nums sm:ml-0 ${
             row.side === "bull" ? "text-sentiment" : "text-ink"
           }`}
         >

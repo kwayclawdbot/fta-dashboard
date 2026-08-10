@@ -94,7 +94,7 @@ function SinceIssued({ from, to }: { from: number | null; to: number | null }) {
   const pct = ((to - from) / from) * 100;
   const up = pct >= 0;
   return (
-    <span className={`font-semibold ${up ? "text-price-up" : "text-price-down"}`}>
+    <span className={`font-mono font-semibold tabular-nums ${up ? "text-price-up" : "text-price-down"}`}>
       {up ? "+" : ""}
       {pct.toFixed(1)}% since issued
     </span>
@@ -280,7 +280,7 @@ export default function PickCard({
               {rr != null && (
                 <span className="flex items-baseline gap-1.5 text-[13px] font-extrabold tracking-[-0.02em] text-ink">
                   Reward to risk{" "}
-                  <span className="text-[18px] text-price-up">{rr.toFixed(1)}:1</span>
+                  <span className="font-mono text-[17px] font-semibold tabular-nums text-price-up">{rr.toFixed(1)}:1</span>
                 </span>
               )}
             </div>
@@ -310,8 +310,8 @@ export default function PickCard({
         {risk != null && reward != null && risk > 0 && (
           <div className="mt-5 flex flex-wrap items-center gap-3 rounded-[13px] border border-sand bg-paper px-4 py-3">
             <p className="min-w-[180px] flex-1 text-[14px] font-semibold tracking-[-0.01em] text-ink">
-              Risk <span className="font-extrabold text-price-down">${money(risk)}</span> to make{" "}
-              <span className="font-extrabold text-price-up">${money(reward)}</span> a share.
+              Risk <span className="font-mono font-bold tabular-nums text-price-down">${money(risk)}</span> to make{" "}
+              <span className="font-mono font-bold tabular-nums text-price-up">${money(reward)}</span> a share.
             </p>
             <div className="flex items-center gap-2">
               {rr != null && (

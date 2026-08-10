@@ -80,11 +80,14 @@
   --color-teal-600: #00B4D8;
   --color-teal-700: #0091AD;
 
-  --color-kai-300: #7DA0FF;
-  --color-kai-400: #4D7BFF;
-  --color-kai-500: #2563FF;
-  --color-kai-600: #1D4FD6;
-  --color-kai-700: #1740A8;
+  /* Kai ramp — reads through RAW vars (like the midnight/gold ramps) so the
+     club-dark block can lift the whole ramp to the board's violet in one place.
+     Family/FTA/club-light keep the cobalt literals set in :root below. */
+  --color-kai-300: var(--kai-300);
+  --color-kai-400: var(--kai-400);
+  --color-kai-500: var(--kai-500);
+  --color-kai-600: var(--kai-600);
+  --color-kai-700: var(--kai-700);
 
   /* Semantic ACCENT — mode-aware (see mode blocks). "The brand action color."
      family=gold · club=volt orange · fta=metallic gold. */
@@ -260,6 +263,14 @@
      Kai-alerts HEADER still uses the .kai-gradient fill from the mock. */
   --kai-blue: #2563FF;
   --kai-blue-soft: rgba(37, 99, 255, 0.10);
+  /* Raw Kai ramp behind the kai-* utilities (see @theme). Cobalt here; the
+     club-dark terminal block re-tunes the whole ramp to the board's violet so
+     bg-kai-500 / text-kai-600 etc. follow --kai-blue without component edits. */
+  --kai-300: #7DA0FF;
+  --kai-400: #4D7BFF;
+  --kai-500: #2563FF;
+  --kai-600: #1D4FD6;
+  --kai-700: #1740A8;
   --grad-kai-header: linear-gradient(135deg, #FF7A1A 0%, #00B4D8 100%);
 
   /* NEUTRALS — BOARD-EXACT, and shared with club mode.
@@ -545,6 +556,15 @@
      everywhere Kai speaks. Same variable, so every Kai surface follows. */
   --kai-blue: #7C6BFF;
   --kai-blue-soft: rgba(124, 107, 255, 0.12);
+  /* Kai RAMP follows the violet (kai-500 ≡ --kai-blue): bg-kai-500 discs,
+     text-kai-600 links, ring-kai-500 hairlines — every kai-* utility on the
+     terminal reads violet, never the family cobalt. Text-end lifted so
+     kai-600/700 text stays AA-large on the #0D0F12 card. */
+  --kai-300: #B3A9FF;
+  --kai-400: #948AFF;
+  --kai-500: #7C6BFF;
+  --kai-600: #9C8FFF;
+  --kai-700: #B3A9FF;
 
   /* Lift the text-end of the orange ramp so active-nav text reads on black. */
   --g600: #FF8A47;
@@ -2218,4 +2238,71 @@ body {
   border-radius: 999px;
   background: var(--dial-hole, var(--card));
   text-align: center;
+}
+
+/* ================================================================== */
+/* ENTRY TERMINAL — pre-auth chrome under the club-dark law            */
+/* ================================================================== */
+/* The (auth) group, /switch and the signup wizard are SHARED surfaces:
+   the entry host/door decides `data-mode`, the cc-appearance cookie
+   decides `data-theme`. When the two resolve to the CLUB TERMINAL
+   (mode=club AND theme=dark — the family appearance policy is
+   light-always, so a family render can never match these selectors)
+   the entry chrome obeys .planning/CLUB-TERMINAL-STYLE.md: a clean
+   #050505 page, the form in ONE clean --card panel ruled by a 1px
+   --sand hairline, PILL primary actions (the ratified club CTA
+   anatomy — vip-room, flashcards, start-here), and hairline (not 2px)
+   choice objects in the wizard. In every LIGHT render these classes
+   are inert or identical to the previous inline styles, so the warm
+   family/club-light composition ships visually byte-identical.
+
+   Both selector forms, same reason as the club-dark token block:
+   data-mode lives on :root when the shell sets it and on a wrapper
+   div on the logged-out surfaces. */
+
+/* The warm brand wash behind the ∞ mark (was an inline style on the
+   (auth) layout and /switch — one declaration now serves both). On the
+   terminal the page stays near-clean black: the 16% glow drops to a 7%
+   ember so the mast reads like the board's headers, not a sunrise. */
+.entry-wash {
+  background: radial-gradient(
+    130% 100% at 50% 0%,
+    color-mix(in srgb, var(--accent-solid) 16%, var(--paper)) 0%,
+    var(--paper) 72%
+  );
+}
+:root[data-theme="dark"][data-mode="club"] .entry-wash,
+:root[data-theme="dark"] [data-mode="club"] .entry-wash {
+  background: radial-gradient(
+    130% 100% at 50% 0%,
+    color-mix(in srgb, var(--accent-solid) 7%, var(--paper)) 0%,
+    var(--paper) 60%
+  );
+}
+
+/* The clean card. A no-op wrapper in light (the light system's "no boxed
+   card" decision stands untouched); the terminal's single panel in
+   club-dark — 16px radius, 1px hairline, 16px interior gutters per the
+   law's card anatomy, so the form never sits as loose type on raw black. */
+:root[data-theme="dark"][data-mode="club"] .entry-card,
+:root[data-theme="dark"] [data-mode="club"] .entry-card {
+  background: var(--card);
+  border: 1px solid var(--sand);
+  border-radius: 16px;
+  padding: 20px 16px 22px;
+}
+
+/* CTA anatomy: solid orange rounded PILL on the terminal. The shared
+   entry CTAs keep their warm rounded-2xl in light. Unlayered, so this
+   outranks any Tailwind rounded-* utility on the same element. */
+:root[data-theme="dark"][data-mode="club"] .entry-cta,
+:root[data-theme="dark"] [data-mode="club"] .entry-cta {
+  border-radius: 9999px;
+}
+
+/* Wizard choice objects (select cards, steppers, chips, inputs) drop the
+   warm 2px edge for the terminal's 1px hairline-on-card read. */
+:root[data-theme="dark"][data-mode="club"] .entry-choice,
+:root[data-theme="dark"] [data-mode="club"] .entry-choice {
+  border-width: 1px;
 }

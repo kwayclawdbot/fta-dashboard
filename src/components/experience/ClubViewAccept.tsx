@@ -31,7 +31,7 @@ export default function ClubViewAccept() {
     <button
       onClick={accept}
       disabled={busy}
-      className="f0-press f0-focus inline-flex w-full items-center justify-center rounded-lg bg-accent px-4 py-3 font-display text-sm font-bold text-[color:var(--accent-on)] disabled:opacity-50"
+      className="entry-cta f0-press f0-focus inline-flex w-full items-center justify-center rounded-2xl bg-accent px-4 py-3.5 font-display text-[15px] font-bold tracking-[0.02em] text-[color:var(--accent-on)] disabled:opacity-50"
     >
       {busy ? "One moment…" : "Yes — view in Club Mode"}
     </button>

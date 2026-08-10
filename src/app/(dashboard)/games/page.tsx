@@ -153,7 +153,9 @@ export default function GamesHubPage() {
   const totalPlays = Object.values(plays).reduce((a, b) => a + b, 0);
 
   return (
-    <div className="mx-auto max-w-3xl space-y-8">
+    /* CLUB: uneven terminal rhythm via section margins below — no uniform
+       space-y stack. FAMILY: original wrapper, byte-identical. */
+    <div className={isClub ? "mx-auto max-w-3xl" : "mx-auto max-w-3xl space-y-8"}>
       <m.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }}>
         {isClub ? (
           <header>
@@ -185,7 +187,7 @@ export default function GamesHubPage() {
       <section
         className={
           isClub
-            ? "rounded-[16px] border border-sand bg-card px-5 py-5"
+            ? "mt-6 rounded-[16px] border border-sand bg-card px-5 py-5"
             : "club-b-warm f0-grain px-5 py-5"
         }
         aria-label="Your record"
@@ -196,7 +198,13 @@ export default function GamesHubPage() {
               Your record
               <span className="text-accent"> in the room</span>
             </p>
-            <p className="mt-2 font-display text-display-2 font-extrabold leading-none tabular-nums text-ink">
+            <p
+              className={
+                isClub
+                  ? "mt-2 font-mono text-[28px] font-bold leading-none tabular-nums text-ink"
+                  : "mt-2 font-display text-display-2 font-extrabold leading-none tabular-nums text-ink"
+              }
+            >
               {totalPlays}
             </p>
             <p className="mt-1.5 text-[12px] leading-snug text-soft">
@@ -320,7 +328,7 @@ export default function GamesHubPage() {
         </div>
         );
         return isClub ? (
-          <section aria-labelledby="games-reps">
+          <section className="mt-7" aria-labelledby="games-reps">
             <h2
               id="games-reps"
               className="text-[13px] font-bold uppercase tracking-[0.06em] text-ink"

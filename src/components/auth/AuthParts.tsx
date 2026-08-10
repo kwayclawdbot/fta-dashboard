@@ -123,7 +123,9 @@ export function FieldToggle({
 
 /** The primary action. FLAT solid orange as the board draws it — no gradient,
  *  no hover lift. `--accent-on` carries the glyph colour, never `text-ink`
- *  (which flips near-white at night on a fill). */
+ *  (which flips near-white at night on a fill). `entry-cta` re-radiuses it to
+ *  the club terminal's pill anatomy in club-dark only (globals.css ENTRY
+ *  TERMINAL); light keeps the warm rounded-2xl. */
 export function AuthSubmit({
   children,
   ...button
@@ -131,7 +133,7 @@ export function AuthSubmit({
   return (
     <button
       {...button}
-      className="f0-focus f0-press inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-accent py-3.5 font-display text-[15px] font-bold tracking-[0.02em] text-[color:var(--accent-on)] disabled:cursor-not-allowed disabled:opacity-50"
+      className="entry-cta f0-focus f0-press inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-accent py-3.5 font-display text-[15px] font-bold tracking-[0.02em] text-[color:var(--accent-on)] disabled:cursor-not-allowed disabled:opacity-50"
     >
       {children}
     </button>
@@ -197,7 +199,7 @@ export function GoogleButton({
     <button
       type="button"
       onClick={onClick}
-      className="f0-frame f0-focus f0-press inline-flex w-full items-center justify-center gap-2.5 rounded-2xl py-3.5 font-display text-[14px] font-bold text-ink transition-colors"
+      className="entry-cta f0-frame f0-focus f0-press inline-flex w-full items-center justify-center gap-2.5 rounded-2xl py-3.5 font-display text-[14px] font-bold text-ink transition-colors"
       style={{ background: "color-mix(in srgb, var(--ink) 3%, transparent)" }}
     >
       <svg className="h-4 w-4" viewBox="0 0 24 24" aria-hidden>

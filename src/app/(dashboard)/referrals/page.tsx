@@ -199,7 +199,10 @@ export default function ReferralsPage() {
   const untouched = stats.clicks === 0 && stats.signups === 0;
 
   return (
-    <div className="mx-auto max-w-2xl space-y-4 pb-14">
+    /* CLUB: uneven terminal rhythm via per-section margins (mast→link 24px,
+       section breaks 24-28px) — no uniform space-y stack. FAMILY: original
+       wrapper, byte-identical. */
+    <div className={isClub ? "mx-auto max-w-2xl pb-14" : "mx-auto max-w-2xl space-y-4 pb-14"}>
       {isClub ? (
         /* Terminal masthead — the SAME commercial strings, no case transform
            (lowercasing or uppercasing a commercial headline is a copy change). */
@@ -266,7 +269,7 @@ export default function ReferralsPage() {
         </>
         );
         return isClub ? (
-          <section className="space-y-3.5 rounded-[16px] border border-sand bg-card px-4 py-4">
+          <section className="mt-6 space-y-3.5 rounded-[16px] border border-sand bg-card px-4 py-4">
             {linkCard}
           </section>
         ) : (
@@ -275,7 +278,7 @@ export default function ReferralsPage() {
       })()}
 
       {targets && (
-        <section className="space-y-2.5">
+        <section className={isClub ? "mt-6 space-y-2.5" : "space-y-2.5"}>
           {isClub ? (
             <h2 className="text-[13px] font-bold uppercase tracking-[0.06em] text-ink">
               Share it
@@ -312,7 +315,7 @@ export default function ReferralsPage() {
       )}
 
       {/* What it has done so far — the board's stat tiles. */}
-      <section className="space-y-2.5 pt-1">
+      <section className={isClub ? "mt-7 space-y-2.5" : "space-y-2.5 pt-1"}>
         {isClub ? (
           <h2 className="text-[13px] font-bold uppercase tracking-[0.06em] text-ink">
             What it has done so far
@@ -336,7 +339,7 @@ export default function ReferralsPage() {
       </section>
 
       {/* How it works */}
-      <section className="space-y-2.5 pt-1">
+      <section className={isClub ? "mt-7 space-y-2.5" : "space-y-2.5 pt-1"}>
         {isClub ? (
           <h2 className="text-[13px] font-bold uppercase tracking-[0.06em] text-ink">
             How it works

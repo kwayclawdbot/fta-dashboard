@@ -22,6 +22,7 @@ import Avatar from "@/components/Avatar";
 import { EmptyLine, TextAction } from "@/components/f0/parts";
 import { BoardCard, TickerMark } from "@/app/(dashboard)/community/board";
 import { CircleRing } from "@/app/(dashboard)/community/ClubCommunityScreen";
+import { useAppMode } from "@/lib/useAppMode";
 
 /* ══════════════════════════════════════════════════════════════════════════
    CIRCLES — the list. Route: /circles. CLUB-TERMINAL-STYLE law, built to the
@@ -228,8 +229,13 @@ function OpenForm({ onOpened }: { onOpened: (slug: string) => void }) {
     onOpened(slug);
   }
 
-  const field =
-    "w-full bg-transparent pb-2 text-[15px] text-ink placeholder:text-soft/70 f0-rule-bottom focus:outline-none focus:border-gold-600";
+  // CLUB-TERMINAL-STYLE sweep 2026-08-10: the club render gets a raised-well
+  // input (rounded card well, accent focus) instead of the legacy gold-hover
+  // underline; the family string below is byte-identical.
+  const isClub = useAppMode() === "club";
+  const field = isClub
+    ? "w-full rounded-[10px] border border-sand bg-card px-3 py-2 text-[15px] text-ink placeholder:text-soft/70 focus:outline-none focus:border-accent"
+    : "w-full bg-transparent pb-2 text-[15px] text-ink placeholder:text-soft/70 f0-rule-bottom focus:outline-none focus:border-gold-600";
 
   return (
     <BoardCard className="space-y-6">

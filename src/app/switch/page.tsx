@@ -80,13 +80,12 @@ export default async function SwitchPage() {
 
   return (
     <div data-mode={experience(host).appMode} className="relative min-h-dvh bg-paper text-ink">
+      {/* Shared pre-auth brand wash (globals.css ENTRY TERMINAL) — same warm
+          gradient as before in light, quieted to an ember on the club-dark
+          terminal. */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-0 h-[280px]"
-        style={{
-          background:
-            "radial-gradient(130% 100% at 50% 0%, color-mix(in srgb, var(--accent-solid) 16%, var(--paper)) 0%, var(--paper) 72%)",
-        }}
+        className="entry-wash pointer-events-none absolute inset-x-0 top-0 h-[280px]"
       />
 
       <div className="relative mx-auto flex min-h-dvh w-full max-w-md flex-col px-5 pb-12 pt-14 sm:pt-20">
@@ -115,7 +114,7 @@ export default async function SwitchPage() {
                     'family'. Settings is the honest interim destination. */}
                 <Link
                   href="/settings"
-                  className="f0-press f0-focus inline-flex w-full items-center justify-center rounded-lg bg-accent px-4 py-3 font-display text-sm font-bold text-[color:var(--accent-on)]"
+                  className="entry-cta f0-press f0-focus inline-flex w-full items-center justify-center rounded-2xl bg-accent px-4 py-3.5 font-display text-[15px] font-bold tracking-[0.02em] text-[color:var(--accent-on)]"
                 >
                   Register for Family Mode
                 </Link>
@@ -147,7 +146,7 @@ export default async function SwitchPage() {
                   className={
                     isAdult
                       ? "mt-4 block text-center text-[13px] font-semibold text-soft transition-colors hover:text-ink"
-                      : "f0-press f0-focus inline-flex w-full items-center justify-center rounded-lg bg-accent px-4 py-3 font-display text-sm font-bold text-[color:var(--accent-on)]"
+                      : "entry-cta f0-press f0-focus inline-flex w-full items-center justify-center rounded-2xl bg-accent px-4 py-3.5 font-display text-[15px] font-bold tracking-[0.02em] text-[color:var(--accent-on)]"
                   }
                 >
                   {isAdult ? "No thanks — my family home" : "Go to my family home"}

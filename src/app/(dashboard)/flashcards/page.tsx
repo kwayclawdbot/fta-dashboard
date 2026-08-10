@@ -258,7 +258,9 @@ export default function FlashcardsPage() {
         : null;
 
     return (
-      <div className="mx-auto max-w-2xl space-y-8 pb-16">
+      /* CLUB: uneven terminal rhythm via per-section margins below — no
+         uniform space-y stack. FAMILY: original wrapper, byte-identical. */
+      <div className={isClub ? "mx-auto max-w-2xl pb-16" : "mx-auto max-w-2xl space-y-8 pb-16"}>
         {isClub ? (
           <header>
             <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-soft">
@@ -290,7 +292,7 @@ export default function FlashcardsPage() {
         <section
           className={
             isClub
-              ? "rounded-[16px] border border-sand bg-card px-5 py-5"
+              ? "mt-6 rounded-[16px] border border-sand bg-card px-5 py-5"
               : "club-b-warm f0-grain px-5 py-5"
           }
           aria-labelledby="daily-5"
@@ -359,10 +361,29 @@ export default function FlashcardsPage() {
             read by nothing; this is its first consumer, and it sits directly
             under the Daily 5 because it is the same promise made specific:
             not "five cards", but THESE concepts, now, before you lose them. */}
-        {userId && <TodaysReview userId={userId} onStartCards={startDaily} starting={starting} />}
+        {userId &&
+          (isClub ? (
+            <div className="mt-6">
+              <TodaysReview userId={userId} onStartCards={startDaily} starting={starting} />
+            </div>
+          ) : (
+            <TodaysReview userId={userId} onStartCards={startDaily} starting={starting} />
+          ))}
 
         {/* Sets — white cards on the paper, never a tile grid. */}
-        {sets.length === 0 ? (
+        {sets.length === 0 && isClub ? (
+          <div className="mt-7">
+            <EmptyLine
+              title="No sets yet"
+              body="Card sets appear here as your program unlocks them — nothing is listed until it has real cards behind it."
+              action={
+                <TextAction href="/courses">
+                  Go to Learn <ArrowRight className="h-3.5 w-3.5" />
+                </TextAction>
+              }
+            />
+          </div>
+        ) : sets.length === 0 ? (
           <EmptyLine
             title="No sets yet"
             body="Card sets appear here as your program unlocks them — nothing is listed until it has real cards behind it."
@@ -407,7 +428,7 @@ export default function FlashcardsPage() {
             </div>
             );
             return isClub ? (
-              <section aria-labelledby="flash-sets">
+              <section className="mt-7" aria-labelledby="flash-sets">
                 <h2
                   id="flash-sets"
                   className="text-[13px] font-bold uppercase tracking-[0.06em] text-ink"

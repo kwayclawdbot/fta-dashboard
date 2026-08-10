@@ -164,7 +164,10 @@ function InviteSignupForm() {
 
   if (!inviteValid) {
     return (
+      // `entry-card`: inert in light; the club terminal's clean --card panel
+      // in club-dark (globals.css ENTRY TERMINAL).
       <m.div
+        className="entry-card"
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
@@ -181,7 +184,7 @@ function InviteSignupForm() {
         <div className="mt-8 flex flex-col gap-4">
           <Link
             href="/signup"
-            className="f0-focus f0-press inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-accent py-3.5 font-display text-[15px] font-bold tracking-[0.02em] text-[color:var(--accent-on)]"
+            className="entry-cta f0-focus f0-press inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-accent py-3.5 font-display text-[15px] font-bold tracking-[0.02em] text-[color:var(--accent-on)]"
           >
             Create Account
             <ArrowRight className="h-4 w-4" />
@@ -200,6 +203,7 @@ function InviteSignupForm() {
   if (success) {
     return (
       <m.div
+        className="entry-card"
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
@@ -237,6 +241,7 @@ function InviteSignupForm() {
 
   return (
     <m.div
+      className="entry-card"
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}

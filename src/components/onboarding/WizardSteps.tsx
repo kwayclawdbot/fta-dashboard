@@ -10,6 +10,11 @@
  * knowledge bank in onboarding-knowledge.ts) — this file only changes the
  * PRESENTATION from the old dark auth-card steps to the gamified wizard cards.
  * The dark ProfileSteps.tsx stays untouched for the /onboarding/profile backfill.
+ *
+ * CLUB TERMINAL (2026-08-10): `entry-choice` / `entry-cta` (globals.css ENTRY
+ * TERMINAL) are inert in every light render — the family/kid warm look is
+ * untouched — and re-skin these objects to the law's hairline cards + pill
+ * CTAs only when the appearance cookie resolves the club-dark terminal.
  */
 
 import { useState } from "react";
@@ -60,8 +65,12 @@ export function StepHeading({
 }) {
   return (
     <div className="text-center mb-6">
+      {/* Eyebrow rides the shared pre-auth register (AuthHeading, the
+          celebration label): mono soft-caps — the wizard used to be the one
+          surface with its own ad-hoc eyebrow. Colour is the gold-700 token,
+          so it stays warm gold in Family and lifts orange on the terminal. */}
       {eyebrow && (
-        <p className="text-[11px] font-bold uppercase tracking-wider text-gold-700 mb-2">
+        <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.24em] text-gold-700 mb-2">
           {eyebrow}
         </p>
       )}
@@ -94,7 +103,7 @@ function SelectCard({
       type="button"
       onClick={onClick}
       aria-pressed={active}
-      className={`w-full text-left p-4 rounded-2xl border-2 transition-all flex items-center gap-3.5 ${
+      className={`entry-choice w-full text-left p-4 rounded-2xl border-2 transition-all flex items-center gap-3.5 ${
         active
           ? "border-gold-400 bg-gold-400/10 shadow-sm"
           : "border-sand bg-card hover:border-gold-300 hover:bg-gold-400/[0.04]"
@@ -142,7 +151,7 @@ function CountStepper({
   icon: LucideIcon;
 }) {
   return (
-    <div className="flex items-center justify-between rounded-2xl bg-card border-2 border-sand px-4 py-3.5">
+    <div className="entry-choice flex items-center justify-between rounded-2xl bg-card border-2 border-sand px-4 py-3.5">
       <span className="flex items-center gap-2.5 text-ink font-display font-semibold">
         <Icon className="w-5 h-5 text-gold-700" />
         {label}
@@ -153,7 +162,7 @@ function CountStepper({
           onClick={() => onChange(Math.max(min, value - 1))}
           disabled={value <= min}
           aria-label={`Fewer ${label}`}
-          className="w-9 h-9 rounded-full border-2 border-sand flex items-center justify-center text-soft hover:border-gold-300 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          className="entry-choice w-9 h-9 rounded-full border-2 border-sand flex items-center justify-center text-soft hover:border-gold-300 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
         >
           <Minus className="w-4 h-4" />
         </button>
@@ -164,7 +173,7 @@ function CountStepper({
           type="button"
           onClick={() => onChange(value + 1)}
           aria-label={`More ${label}`}
-          className="w-9 h-9 rounded-full border-2 border-sand flex items-center justify-center text-soft hover:border-gold-300 transition-colors"
+          className="entry-choice w-9 h-9 rounded-full border-2 border-sand flex items-center justify-center text-soft hover:border-gold-300 transition-colors"
         >
           <Plus className="w-4 h-4" />
         </button>
@@ -222,7 +231,7 @@ export function WhoIsJoiningStep({
           type="button"
           onClick={chooseSolo}
           aria-pressed={mode === "solo"}
-          className={`p-5 rounded-2xl border-2 text-center transition-all ${
+          className={`entry-choice p-5 rounded-2xl border-2 text-center transition-all ${
             mode === "solo"
               ? "border-gold-400 bg-gold-400/10 shadow-sm"
               : "border-sand bg-card hover:border-gold-300"
@@ -236,7 +245,7 @@ export function WhoIsJoiningStep({
           type="button"
           onClick={chooseFamily}
           aria-pressed={mode === "family"}
-          className={`p-5 rounded-2xl border-2 text-center transition-all ${
+          className={`entry-choice p-5 rounded-2xl border-2 text-center transition-all ${
             mode === "family"
               ? "border-gold-400 bg-gold-400/10 shadow-sm"
               : "border-sand bg-card hover:border-gold-300"
@@ -283,7 +292,7 @@ export function WhoIsJoiningStep({
                       key={o.value}
                       type="button"
                       onClick={() => toggleRange(o.value)}
-                      className={`px-4 py-2.5 rounded-full text-sm font-semibold border-2 transition-colors ${
+                      className={`entry-choice px-4 py-2.5 rounded-full text-sm font-semibold border-2 transition-colors ${
                         on
                           ? "bg-gold-400/15 border-gold-400 text-gold-800"
                           : "bg-card border-sand text-soft hover:border-gold-300"
@@ -334,7 +343,7 @@ export function KidAgeStep({
               key={a.value}
               type="button"
               onClick={() => onChange(a.value)}
-              className={`p-6 rounded-2xl border-2 text-center transition-all ${
+              className={`entry-choice p-6 rounded-2xl border-2 text-center transition-all ${
                 on ? "border-gold-400 bg-gold-400/10 shadow-sm" : "border-sand bg-card hover:border-gold-300"
               }`}
             >
@@ -419,7 +428,7 @@ export function GoalsStep({
           value={draft.goals_other}
           onChange={(e) => onChange({ goals_other: e.target.value })}
           placeholder="What else are you hoping for?"
-          className="mt-3 w-full px-4 py-3 rounded-xl bg-card border-2 border-sand text-ink placeholder:text-soft/70 focus:outline-none focus:border-gold-400 transition-colors text-sm"
+          className="entry-choice mt-3 w-full px-4 py-3 rounded-xl bg-card border-2 border-sand text-ink placeholder:text-soft/70 focus:outline-none focus:border-gold-400 transition-colors text-sm"
         />
       )}
     </div>
@@ -489,7 +498,7 @@ export function KnowledgeCheckStep({
   return (
     <div>
       <StepHeading eyebrow={eyebrow} title="True or false?" />
-      <div className="rounded-2xl border-2 border-sand bg-card p-5 sm:p-6 mb-5">
+      <div className="entry-choice rounded-2xl border-2 border-sand bg-card p-5 sm:p-6 mb-5">
         <p className="font-display text-lg sm:text-xl font-semibold text-ink text-center leading-snug">
           {check.statement}
         </p>
@@ -503,9 +512,12 @@ export function KnowledgeCheckStep({
           const isRightChoice = check.answer === opt.v;
           // After answering, gently color the correct choice green + the wrong
           // pick amber — never a harsh red "fail" (every answer is celebrated).
+          // Teal text lifts a few steps in dark: teal-700 is unreadable on the
+          // club terminal's #0D0F12 card.
           let tone = "border-sand bg-card hover:border-gold-300 text-ink";
           if (answered) {
-            if (isRightChoice) tone = "border-teal-500 bg-teal-500/10 text-teal-700";
+            if (isRightChoice)
+              tone = "border-teal-500 bg-teal-500/10 text-teal-700 dark:text-teal-300";
             else if (chosen) tone = "border-gold-400 bg-gold-400/10 text-gold-800";
             else tone = "border-sand bg-card text-soft opacity-60";
           } else if (chosen) {
@@ -517,7 +529,7 @@ export function KnowledgeCheckStep({
               type="button"
               onClick={() => !answered && onAnswer(opt.v)}
               disabled={answered}
-              className={`py-5 rounded-2xl border-2 font-display font-bold text-lg transition-all ${tone}`}
+              className={`entry-choice py-5 rounded-2xl border-2 font-display font-bold text-lg transition-all ${tone}`}
             >
               {opt.label}
             </button>
@@ -529,7 +541,9 @@ export function KnowledgeCheckStep({
           initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
           className={`mt-4 flex items-start gap-2.5 rounded-xl px-4 py-3 text-sm ${
-            correct ? "bg-teal-500/10 text-teal-700" : "bg-gold-400/10 text-gold-800"
+            correct
+              ? "bg-teal-500/10 text-teal-700 dark:text-teal-300"
+              : "bg-gold-400/10 text-gold-800"
           }`}
         >
           <span className="mt-0.5 shrink-0">
@@ -573,7 +587,7 @@ export function UsernameStep({
           onChange={(e) => onChange(e.target.value)}
           placeholder={register === "kid" ? "Your name" : "e.g. Marcus J"}
           autoFocus
-          className="w-full pl-12 pr-4 py-4 rounded-2xl bg-card border-2 border-sand text-ink text-lg font-display font-semibold text-center placeholder:font-normal placeholder:text-soft/70 focus:outline-none focus:border-gold-400 transition-colors"
+          className="entry-choice w-full pl-12 pr-4 py-4 rounded-2xl bg-card border-2 border-sand text-ink text-lg font-display font-semibold text-center placeholder:font-normal placeholder:text-soft/70 focus:outline-none focus:border-gold-400 transition-colors"
         />
       </div>
       {warning && (
@@ -645,7 +659,7 @@ export function PasswordStep({
             placeholder="New password"
             autoFocus
             autoComplete="new-password"
-            className="w-full pl-12 pr-12 py-4 rounded-2xl bg-card border-2 border-sand text-ink text-base focus:outline-none focus:border-gold-400 transition-colors"
+            className="entry-choice w-full pl-12 pr-12 py-4 rounded-2xl bg-card border-2 border-sand text-ink text-base focus:outline-none focus:border-gold-400 transition-colors"
           />
           <button
             type="button"
@@ -665,7 +679,7 @@ export function PasswordStep({
             onChange={(e) => onConfirmChange(e.target.value)}
             placeholder="Confirm password"
             autoComplete="new-password"
-            className="w-full pl-12 pr-4 py-4 rounded-2xl bg-card border-2 border-sand text-ink text-base focus:outline-none focus:border-gold-400 transition-colors"
+            className="entry-choice w-full pl-12 pr-4 py-4 rounded-2xl bg-card border-2 border-sand text-ink text-base focus:outline-none focus:border-gold-400 transition-colors"
           />
         </div>
 
@@ -725,7 +739,7 @@ export function WelcomeSplash({
       <p className="text-soft text-base mt-3 max-w-md mx-auto leading-relaxed">{sub}</p>
       <button
         onClick={onStart}
-        className="f0-press f0-focus mt-8 inline-flex items-center gap-2 rounded-2xl bg-accent px-7 py-3.5 font-display text-base font-bold tracking-[0.02em] text-[color:var(--accent-on)]"
+        className="entry-cta f0-press f0-focus mt-8 inline-flex items-center gap-2 rounded-2xl bg-accent px-7 py-3.5 font-display text-base font-bold tracking-[0.02em] text-[color:var(--accent-on)]"
       >
         Let&apos;s go
         <ArrowRight className="w-5 h-5" />

@@ -229,6 +229,7 @@ export default function ThesisObjectClient({
 
         {isAuthor && !isKid && (
           <UpdateComposer
+            club={isClub}
             onPost={async (kind, body) => {
               const res = await addThesisUpdate(supabase, object.id, kind, body);
               if (res.ok) {
@@ -335,7 +336,14 @@ export default function ThesisObjectClient({
   );
 }
 
-function UpdateComposer({ onPost }: { onPost: (kind: ThesisUpdateKind, body: string) => Promise<boolean> }) {
+function UpdateComposer({
+  onPost,
+  club = false,
+}: {
+  onPost: (kind: ThesisUpdateKind, body: string) => Promise<boolean>;
+  /** Club terminal skin: raised-well composer (no gold-hover underline). */
+  club?: boolean;
+}) {
   const [kind, setKind] = useState<ThesisUpdateKind>("strengthened");
   const [body, setBody] = useState("");
   const [busy, setBusy] = useState(false);
@@ -380,7 +388,11 @@ function UpdateComposer({ onPost }: { onPost: (kind: ThesisUpdateKind, body: str
           onChange={(e) => setBody(e.target.value)}
           rows={1}
           placeholder="What changed?"
-          className="max-h-28 flex-1 resize-none border-b border-sand bg-transparent px-1 py-2 text-[14px] leading-relaxed text-ink placeholder:text-soft/55 focus:border-gold-400 focus:outline-none"
+          className={
+            club
+              ? "max-h-28 flex-1 resize-none rounded-[10px] border border-sand bg-card px-3 py-2 text-[14px] leading-relaxed text-ink placeholder:text-soft/55 focus:border-accent focus:outline-none"
+              : "max-h-28 flex-1 resize-none border-b border-sand bg-transparent px-1 py-2 text-[14px] leading-relaxed text-ink placeholder:text-soft/55 focus:border-gold-400 focus:outline-none"
+          }
         />
         <button
           onClick={submit}
@@ -530,7 +542,11 @@ function SectionBlock({
                 onChange={(e) => setDraft(e.target.value)}
                 rows={1}
                 placeholder={`Respond to ${label.toLowerCase()}…`}
-                className="max-h-28 flex-1 resize-none border-b border-sand bg-transparent px-1 py-2 text-[14px] leading-relaxed text-ink placeholder:text-soft/55 focus:border-gold-400 focus:outline-none"
+                className={
+                  club
+                    ? "max-h-28 flex-1 resize-none rounded-[10px] border border-sand bg-card px-3 py-2 text-[14px] leading-relaxed text-ink placeholder:text-soft/55 focus:border-accent focus:outline-none"
+                    : "max-h-28 flex-1 resize-none border-b border-sand bg-transparent px-1 py-2 text-[14px] leading-relaxed text-ink placeholder:text-soft/55 focus:border-gold-400 focus:outline-none"
+                }
               />
               <button
                 onClick={submit}

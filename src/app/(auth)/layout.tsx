@@ -41,14 +41,13 @@ export default async function AuthLayout({
       className="relative min-h-dvh bg-paper text-ink"
     >
       {/* Canvas board 10: a 230px warm brand wash behind the mark. Token-mixed
-          so it is correct on cream AND on the warm night page. */}
+          so it is correct on cream AND on the warm night page. `.entry-wash`
+          (globals.css ENTRY TERMINAL) carries the same gradient in light and
+          quiets it to a faint ember on the club-dark terminal, where the law
+          wants a clean #050505 page. */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-0 h-[280px]"
-        style={{
-          background:
-            "radial-gradient(130% 100% at 50% 0%, color-mix(in srgb, var(--accent-solid) 16%, var(--paper)) 0%, var(--paper) 72%)",
-        }}
+        className="entry-wash pointer-events-none absolute inset-x-0 top-0 h-[280px]"
       />
 
       <div className="relative mx-auto flex min-h-dvh w-full max-w-md flex-col px-5 pb-10 pt-12 sm:pt-16">

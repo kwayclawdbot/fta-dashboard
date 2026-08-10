@@ -424,8 +424,11 @@ export default function OnboardingWizard() {
           </p>
           {showChrome && (
             <div className="h-1.5 rounded-full bg-sand overflow-hidden">
+              {/* Progress fill rides the semantic accent (gold in Family,
+                  volt orange on the club terminal) — same pixels as the old
+                  bg-gold-500 in light, law-correct token in club-dark. */}
               <m.div
-                className="h-full bg-gold-500 rounded-full"
+                className="h-full bg-accent rounded-full"
                 initial={false}
                 animate={{ width: `${Math.round(progress * 100)}%` }}
                 transition={{ type: "tween", duration: 0.3 }}
@@ -583,7 +586,7 @@ export default function OnboardingWizard() {
                 <button
                   onClick={complete}
                   disabled={loading}
-                  className="f0-focus f0-press flex items-center gap-2 rounded-2xl bg-accent px-6 py-3 font-display text-sm font-bold tracking-[0.02em] text-[color:var(--accent-on)] disabled:opacity-50"
+                  className="entry-cta f0-focus f0-press flex items-center gap-2 rounded-2xl bg-accent px-6 py-3 font-display text-sm font-bold tracking-[0.02em] text-[color:var(--accent-on)] disabled:opacity-50"
                 >
                   {loading ? "Setting up…" : "Go to my dashboard"}
                   {!loading && <ArrowRight className="w-4 h-4" />}
@@ -592,7 +595,7 @@ export default function OnboardingWizard() {
                 <button
                   onClick={submitPassword}
                   disabled={!canProceed || loading}
-                  className="f0-focus f0-press flex items-center gap-2 rounded-2xl bg-accent px-6 py-3 font-display text-sm font-bold tracking-[0.02em] text-[color:var(--accent-on)] disabled:cursor-not-allowed disabled:opacity-40"
+                  className="entry-cta f0-focus f0-press flex items-center gap-2 rounded-2xl bg-accent px-6 py-3 font-display text-sm font-bold tracking-[0.02em] text-[color:var(--accent-on)] disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   {loading ? "Saving…" : "Continue"}
                   {!loading && <ArrowRight className="w-4 h-4" />}
@@ -601,7 +604,7 @@ export default function OnboardingWizard() {
                 <button
                   onClick={continueFromUsername}
                   disabled={!canProceed || loading}
-                  className="f0-focus f0-press flex items-center gap-2 rounded-2xl bg-accent px-6 py-3 font-display text-sm font-bold tracking-[0.02em] text-[color:var(--accent-on)] disabled:cursor-not-allowed disabled:opacity-40"
+                  className="entry-cta f0-focus f0-press flex items-center gap-2 rounded-2xl bg-accent px-6 py-3 font-display text-sm font-bold tracking-[0.02em] text-[color:var(--accent-on)] disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   {loading ? "Setting up…" : "Continue"}
                   {!loading && <ArrowRight className="w-4 h-4" />}
@@ -610,7 +613,7 @@ export default function OnboardingWizard() {
                 <button
                   onClick={goNext}
                   disabled={!canProceed}
-                  className="f0-focus f0-press flex items-center gap-2 rounded-2xl bg-accent px-6 py-3 font-display text-sm font-bold tracking-[0.02em] text-[color:var(--accent-on)] disabled:cursor-not-allowed disabled:opacity-40"
+                  className="entry-cta f0-focus f0-press flex items-center gap-2 rounded-2xl bg-accent px-6 py-3 font-display text-sm font-bold tracking-[0.02em] text-[color:var(--accent-on)] disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   Continue
                   <ArrowRight className="w-4 h-4" />

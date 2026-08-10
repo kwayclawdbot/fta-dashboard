@@ -263,7 +263,7 @@ export default function FloatingKaiButton({
           onClick={restore}
           aria-label="Show Kai"
           title="Show Kai"
-          className={`group fixed right-0 z-40 flex h-14 w-[22px] flex-col items-center justify-center gap-1 rounded-l-xl bg-kai-500 text-white shadow-[0_4px_16px_rgba(37,99,255,0.4)] ring-1 ring-white/10 transition-[width,transform] duration-200 hover:w-6 active:scale-95 ${bottomClass}`}
+          className={`group fixed right-0 z-40 flex h-14 w-[22px] flex-col items-center justify-center gap-1 rounded-l-xl bg-kai-500 text-white shadow-[0_4px_16px_color-mix(in_srgb,var(--kai-blue,#2563FF)_40%,transparent)] ring-1 ring-white/10 transition-[width,transform] duration-200 hover:w-6 active:scale-95 ${bottomClass}`}
           style={{ marginBottom: "0" }}
         >
           <ChevronLeft className="h-3 w-3 opacity-80" strokeWidth={2.4} />

@@ -6,6 +6,7 @@ import { Send, Trash2, StickyNote, Lightbulb, TriangleAlert, Newspaper, LineChar
 import AgeBadge from "@/components/community/AgeBadge";
 import { CONTRIBUTION_TYPES, contributionMeta, type ContributionType } from "@/lib/research/social";
 import { useClientNow } from "@/lib/research/clock";
+import { useAppMode } from "@/lib/useAppMode";
 
 /**
  * THE DISCUSSION — the persistent community thread on a ticker.
@@ -168,6 +169,9 @@ export default function TickerDiscussion({
   onPost: () => void;
   onRemove: (id: string) => void;
 }) {
+  // CLUB-TERMINAL-STYLE sweep 2026-08-10: club gets a raised-well composer
+  // (no gold-hover underline input); family render byte-identical.
+  const isClub = useAppMode() === "club";
   const [filter, setFilter] = useState<string>("all");
   const [expanded, setExpanded] = useState(false);
   const now = useClientNow();
@@ -249,7 +253,11 @@ export default function TickerDiscussion({
             onChange={(e) => onDraft(e.target.value)}
             rows={2}
             placeholder={`Add a ${contributionMeta(draftType).label.toLowerCase()} about ${companyName}…`}
-            className="w-full resize-none border-b border-sand bg-transparent py-2 text-[14px] text-ink outline-none transition-colors placeholder:text-soft/70 focus:border-gold-500"
+            className={
+              isClub
+                ? "w-full resize-none rounded-[10px] border border-sand bg-card px-3 py-2 text-[14px] text-ink outline-none transition-colors placeholder:text-soft/70 focus:border-accent"
+                : "w-full resize-none border-b border-sand bg-transparent py-2 text-[14px] text-ink outline-none transition-colors placeholder:text-soft/70 focus:border-gold-500"
+            }
           />
           {err && <p className="mt-1.5 text-xs text-red-600">{err}</p>}
           <div className="mt-2.5 flex justify-end">

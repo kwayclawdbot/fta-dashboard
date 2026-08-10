@@ -85,7 +85,7 @@ export default function InviteStep({ isSolo = false }: { isSolo?: boolean }) {
           <button
             onClick={copyLink}
             disabled={!link}
-            className="f0-press f0-focus inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-accent px-5 py-3 font-display text-sm font-bold tracking-[0.02em] text-[color:var(--accent-on)] disabled:opacity-40"
+            className="entry-cta f0-press f0-focus inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-accent px-5 py-3 font-display text-sm font-bold tracking-[0.02em] text-[color:var(--accent-on)] disabled:opacity-40"
           >
             {copied ? (
               <>

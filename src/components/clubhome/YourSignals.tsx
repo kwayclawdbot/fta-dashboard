@@ -150,7 +150,7 @@ export default function YourSignals({
                 )}
                 {hasPct ? (
                   <span
-                    className={`w-[58px] shrink-0 text-right text-[13px] font-semibold tabular-nums ${toneFor(
+                    className={`w-[58px] shrink-0 text-right font-mono text-[12.5px] font-semibold tabular-nums ${toneFor(
                       it.changePct
                     )}`}
                   >

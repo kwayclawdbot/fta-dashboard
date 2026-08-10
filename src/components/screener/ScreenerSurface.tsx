@@ -4,24 +4,23 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { m, AnimatePresence } from "@/lib/motion";
+// The filter sheet drags to dismiss; `drag` is not in the diet bundle, so the
+// sheet imports the full primitive the way MobileTabBar's More sheet does.
+import { motion, type PanInfo } from "framer-motion";
 import {
   Telescope,
   Search,
   ChevronDown,
   ArrowRight,
-  Plus,
-  Users2,
-  Check,
   SlidersHorizontal,
   Info,
   Lock,
   X,
   Sparkles,
-  CornerDownLeft,
   Bookmark,
+  Star,
 } from "lucide-react";
-import { Bone, BoardCard, FoundingLine } from "@/components/discover/board";
-import { sparkPath } from "@/components/clubhome/MarketPulse";
+import { Bone, BoardCard, FoundingLine, TickerSpark } from "@/components/discover/board";
 import type { TrendingResponse, TrendingRow } from "@/lib/clubhome/contract";
 import { createClient } from "@/lib/supabase/client";
 import { parseScreenerQuery } from "@/lib/screener-nl";
@@ -116,8 +115,8 @@ type SortKey =
   | "like_count";
 
 /** The sort menu — Club signal first, because that is where the surface opens.
- *  Board 15 states the current sort in its results header rather than hanging a
- *  sortable column bar over the rows, so the menu IS the sort control now. */
+ *  The board states the current sort in its results header rather than hanging
+ *  a sortable column bar over the rows, so the menu IS the sort control. */
 const SORT_OPTIONS: { key: SortKey; label: string }[] = [
   { key: "like_count", label: "Club signal" },
   { key: "mcap", label: "Market cap" },
@@ -131,134 +130,13 @@ const SORT_OPTIONS: { key: SortKey; label: string }[] = [
   { key: "ticker", label: "Ticker" },
 ];
 
-/* ---------- club heat ----------
-   COLOUR LAW: heat is COMMUNITY SENTIMENT, so it takes the canonical sentiment
-   ramp — never the red heart it used to be (red belongs to price, and a red
-   heart next to a red 1d% made the two read as the same signal). The token
-   carries both theme steps itself, which is why there is no dark: variant here.
-
-   Board 15 draws this slot as a tinted signal CHIP at the right end of the row
-   ("78%", `rgba(74,227,131,.12)` ground). Same object here, carrying the honest
-   number the app actually has — the count of members who have warmed the name —
-   rather than a percentage the screener's data cannot support. */
-function HeatChip({ n }: { n: number | null | undefined }) {
-  // NOTHING, not a dash. Heat is a POSITIVE signal — "members have warmed this
-  // name" — so its absence is already carried by the chip not being there. A
-  // dash is the honest form of "we measured and got no reading"; here we
-  // measured and got zero, and printing it turned the last column of a
-  // founding-club result list into a stack of dashes on every single row.
-  if (!n || n <= 0) return null;
-  return (
-    <span className="shrink-0 rounded-[8px] bg-sentiment-fill/12 px-[7px] py-[3px] font-mono text-[10px] font-semibold tabular-nums text-sentiment">
-      {n}
-    </span>
-  );
-}
-
-/* ---------- the row sparkline ----------
-   The terminal anatomy hangs a REAL line sparkline off every ticker row, drawn
-   by the shared bars-fetch pattern (clubhome/MarketPulse's exported sparkPath,
-   fed by the same GET /api/market/bars?range=1m read its useBarSeries makes —
-   real daily closes, never a reconstruction). One adaptation for a 100-row
-   page: the fetch is deferred until the row scrolls into view and deduplicated
-   through a module promise cache, so opening the screener is never a hundred
-   simultaneous network calls (the same discipline discover/board's TickerSpark
-   documents for its own row strips). Month drift colors the CURVE; the day
-   move colors the % beside it — the two may disagree, and that's correct.
-   No bars → no line; the slot holds its height so rows never reflow. */
-const rowBarCache = new Map<string, Promise<number[]>>();
-
-function rowCloses(symbol: string): Promise<number[]> {
-  const key = symbol.toUpperCase();
-  let p = rowBarCache.get(key);
-  if (!p) {
-    p = fetch(`/api/market/bars?symbol=${encodeURIComponent(key)}&range=1m`, {
-      headers: { accept: "application/json" },
-    })
-      .then((res) =>
-        res.ok ? (res.json() as Promise<{ bars?: { t: number; c: number }[] }>) : null
-      )
-      .then((json) =>
-        (json?.bars ?? []).map((b) => b.c).filter((c) => Number.isFinite(c))
-      )
-      .catch(() => []);
-    rowBarCache.set(key, p);
-  }
-  return p;
-}
-
-function RowSpark({ symbol }: { symbol: string }) {
-  const host = useRef<HTMLSpanElement>(null);
-  const [closes, setCloses] = useState<number[] | null>(null);
-  const [seen, setSeen] = useState(false);
-
-  useEffect(() => {
-    const el = host.current;
-    if (!el || seen) return;
-    if (typeof IntersectionObserver === "undefined") {
-      // No observer (old browsers, jsdom): load anyway, from a callback so a
-      // synchronous setState never cascades a render on every mount.
-      const id = setTimeout(() => setSeen(true), 0);
-      return () => clearTimeout(id);
-    }
-    const io = new IntersectionObserver(
-      (entries) => {
-        if (entries.some((e) => e.isIntersecting)) {
-          setSeen(true);
-          io.disconnect();
-        }
-      },
-      { rootMargin: "240px" }
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, [seen]);
-
-  useEffect(() => {
-    if (!seen) return;
-    let live = true;
-    rowCloses(symbol).then((c) => {
-      if (live && c.length >= 2) setCloses(c);
-    });
-    return () => {
-      live = false;
-    };
-  }, [seen, symbol]);
-
-  const path = closes ? sparkPath(closes) : null;
-  const net = closes ? closes[closes.length - 1] - closes[0] : 0;
-  const stroke =
-    net > 0 ? "var(--price-up)" : net < 0 ? "var(--price-down)" : "var(--soft)";
-  return (
-    <span ref={host} aria-hidden className="block h-[20px] w-full">
-      {path && (
-        <svg
-          viewBox="0 0 90 24"
-          preserveAspectRatio="none"
-          className="h-full w-full"
-        >
-          <path
-            d={path}
-            fill="none"
-            stroke={stroke}
-            strokeWidth={1.6}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            vectorEffect="non-scaling-stroke"
-          />
-        </svg>
-      )}
-    </span>
-  );
-}
-
 /* ---------- terminal primitives (style law — semantic tokens only) ----------
-   Section labels are WHITE BOLD CAPS ~13px on the ink token (charcoal on the
-   family paper, white on the club terminal — same class, no branch). Choice
-   chips are RAISED WELLS on --m800 (a light-sand well on family/club-light, a
-   raised cool well on club-dark); the active one takes the brand-accent pill.
-   Tabs underline in Kai's violet. Nothing here hardcodes a surface hex, so
-   family-light stays coherent without a mode branch. */
+   Section labels are WHITE BOLD CAPS ~13px on the ink token. Chip-row prefixes
+   are the board's KAI-INTERPRETATION register: small soft-caps INLINE before
+   the chips, never a stacked form label. Choice chips are RAISED WELLS on
+   --m800; the active one takes the brand-accent pill. Tabs underline in Kai's
+   violet. Nothing here hardcodes a surface hex, so family-light stays coherent
+   without a mode branch. */
 function SectionLabel({
   id,
   className = "",
@@ -275,6 +153,18 @@ function SectionLabel({
     >
       {children}
     </h2>
+  );
+}
+
+/** The board's inline chip-row prefix — soft caps, in the flow, never stacked. */
+function InlinePrefix({ children }: { children: React.ReactNode }) {
+  return (
+    <span
+      aria-hidden
+      className="mr-0.5 shrink-0 text-[10.5px] font-bold uppercase tracking-[0.1em] text-soft"
+    >
+      {children}
+    </span>
   );
 }
 
@@ -364,11 +254,11 @@ interface Meta {
 }
 
 /* ---------- saved screens (migration 194) ----------
-   Canvas board 15 draws "Save screen" on the results header. It is backed by
-   `screener_saved_screens`: own-row RLS, kid-walled through the same
-   viewer_is_kid() definer the screener universe uses, capped at 20 per member
-   by a trigger. `filters` is the CustomFilters blob verbatim, so a re-applied
-   screen and a hand-built one are the same object. */
+   "Save screen" on the results header is backed by `screener_saved_screens`:
+   own-row RLS, kid-walled through the same viewer_is_kid() definer the
+   screener universe uses, capped at 20 per member by a trigger. `filters` is
+   the CustomFilters blob verbatim, so a re-applied screen and a hand-built
+   one are the same object. */
 const SAVED_SCREEN_LIMIT = 20;
 
 /**
@@ -390,43 +280,45 @@ interface SavedScreen {
 }
 
 /**
- * ScreenerSurface — the full-universe stock screener, restyled to the ratified
- * CLUB TERMINAL STYLE law (.planning/CLUB-TERMINAL-STYLE.md). It is SHARED by
- * the club Discover Screens tab, the standalone /screener route and every
- * family placement, so the whole restyle is SEMANTIC TOKENS ONLY — the same
- * classes render the dark terminal in club-dark and stay coherent on the
- * family/club-light paper; there is no mode branch anywhere in this file.
+ * ScreenerSurface — the full-universe stock screener, designed AS IF it were a
+ * screen of the owner's mockup board (.planning/CLUB-TERMINAL-STYLE.md, DISCOVER
+ * phone of `ChatGPT Image Aug 7 … 10_07_23 AM.png`). There is no filter-panel
+ * phone on the board, so this surface borrows the DISCOVER phone's complete
+ * vocabulary rather than restyling a form:
  *
- * THE ANATOMY, TOP TO BOTTOM:
- *   masthead        "DISCOVER" caps wordmark · display headline (mode-mapped:
- *                   Inter on club, Sora on family/fta) · mono coverage
- *                   line (the screener is filed as a TAB of Discover)
- *   tabs            For you · Screener · Trending — violet (--kai-blue) 2px
- *                   underline on the live tab
- *   search / NL     rounded 14px cards, 15px interior padding; the plain-
- *                   English field wears Kai's violet hairline
- *   chips           every one-of-N choice is a RAISED WELL (--m800) chip;
- *                   the live one takes the brand-accent pill
- *   results header  "14 MATCHES · SORTED BY CLUB SIGNAL" in mono caps, with
- *                   "Save screen" as the solid orange pill CTA
- *   results         quiet rounded ticker rows: 32px logo tile · bold display-face
- *                   ticker · real-closes line sparkline · mono price ·
- *                   green/red day move · signal chip
- *   conviction      two cards side by side — "Club's most bullish" on a
- *                   sentiment hairline, "most bearish" on the plain one
- *   trending        "TRENDING IN THE CLUB" — a wrap of raised-well chips
+ *   head          display headline · ONE plain-English ask bar (the board's
+ *                 query-bar anatomy: rounded card, sentence placeholder, run
+ *                 arrow in the right slot)
+ *   chips         active filters as removable accent chips flowing under the
+ *                 bar (the KAI INTERPRETATION register), led by ONE compact
+ *                 "Filters · N" trigger
+ *   sheet         the FULL filter set lives in a bottom sheet (phones) /
+ *                 side panel (desktop) — grouped, roomy, the board's
+ *                 pill/well vocabulary; the More-sheet pattern from
+ *                 MobileTabBar, copied
+ *   results       rows EXACTLY per the board's discover result anatomy:
+ *                 40px round logo · bold display-face name · soft mono meta
+ *                 line · green "% Bullish" dot line (only when the ledger
+ *                 really carries a read) · mono ticker · bold mono price ·
+ *                 real-closes sparkline · gold watchlist star
+ *
+ * It is SHARED by the club Discover Screens tab, the standalone /screener
+ * route and every family placement, so the whole composition is SEMANTIC
+ * TOKENS ONLY — the same classes render the dark terminal in club-dark and
+ * stay coherent on the family/club-light paper; no mode branch in this file.
+ * Fonts ride `font-display` (Inter under the club remap, Sora on family) and
+ * mono is strictly numbers/data.
+ *
+ * BEHAVIOR IS PRESERVED: the universe load discipline, deterministic NL parse
+ * (src/lib/screener-nl.ts), presets, saved screens + the 20 cap, the free
+ * meter on saving, the FTA gate on Academy filters, the kid walls, sort and
+ * pagination are all the same code paths as before the recomposition.
  *
  * `embedded` renders it as the Screens tab inside Discover, so the masthead,
  * the tab row and the two tail blocks are dropped — the host already carries
- * all three. The data, filters, full-universe load, saved screens and
- * free-tier gating are identical in both placements.
- *
- * `nlSeed` / `seedScreenId` — the CLUB-mode Discover composition (CheatCodeDoors
- * redesign) owns the "Plain English in" query bar and the Saved-screens tab, so
- * it hands the query / the chosen screen down here rather than duplicating the
- * screener. Both are optional and INERT when absent — every family/kid placement
- * passes neither, so nothing changes for them — and both run through the same
- * deterministic parse / apply paths the in-surface controls use.
+ * all three. `nlSeed` / `seedScreenId` — the club Discover host hands its ask /
+ * chosen screen down here; both are optional and INERT when absent, and both
+ * run through the same parse / apply paths the in-surface controls use.
  */
 export default function ScreenerSurface({
   embedded = false,
@@ -474,10 +366,9 @@ export default function ScreenerSurface({
   const [nlInput, setNlInput] = useState("");
   const [nlNote, setNlNote] = useState<string | null>(null);
 
-  // (The club-heat default used to be applied by an effect once the app mode
-  // resolved, which meant the first paint sorted by market cap and then jumped.
-  // It is now the initial state above — one sort, no reshuffle.)
-  const [filtersOpen, setFiltersOpen] = useState(true);
+  // The full filter set lives in the SHEET now — closed until asked for. The
+  // "Filters · N" trigger under the ask bar is the one way in.
+  const [sheetOpen, setSheetOpen] = useState(false);
   const [explainerOpen, setExplainerOpen] = useState(false);
   // The "how to use a screener" explainer auto-opens for members still inside
   // the new-member window; the toggle button doubles as the reopen affordance
@@ -539,20 +430,18 @@ export default function ScreenerSurface({
   /* eslint-enable react-hooks/set-state-in-effect */
 
   const isFTA = tier === "fta";
-  // Free is a METER on this surface now, not a door: the basic groups and the
-  // results table run, and only the two things the Club actually buys — the
-  // Advanced group (already FTA-gated below) and saving a screen — are held.
+  // Free is a METER on this surface, not a door: the basic groups and the
+  // results run, and only the two things the Club actually buys — the Academy
+  // group (already FTA-gated below) and saving a screen — are held.
   const isFree = tier === "free";
 
-  /* Board 15's tail — "Club's most bullish / bearish" and "Trending in the
-     Club" — is COMMUNITY data, which `screener_metrics` does not carry. It
-     comes off the same ranked attention ledger Discover reads, so the two
-     surfaces can never disagree about who the Club is bullish on. Fails soft to
-     null: the blocks simply do not render. Skipped entirely when embedded,
-     where the Discover host already draws them. */
+  /* The community ledger — the same ranked attention read Discover makes, so
+     the two surfaces can never disagree about who the Club is bullish on. It
+     feeds BOTH the result rows' "% Bullish" line (the board's line 3 — drawn
+     only when a real read exists for that ticker) and, on the standalone
+     route, the conviction/trending tail. Fails soft to null: no line, no tail. */
   const [clubLedger, setClubLedger] = useState<TrendingResponse | null>(null);
   useEffect(() => {
-    if (embedded) return;
     const ctrl = new AbortController();
     fetch("/api/club/trending", {
       signal: ctrl.signal,
@@ -562,13 +451,14 @@ export default function ScreenerSurface({
       .then((d) => d && setClubLedger(d))
       .catch(() => {});
     return () => ctrl.abort();
-  }, [embedded]);
+  }, []);
 
-  /** Whole-row deep-link into the ticker's research page (fix: clickable rows). */
-  const openResearch = useCallback(
-    (ticker: string) => router.push(researchHref(ticker)),
-    [router]
-  );
+  /** ticker → ledger row, for the green "% Bullish" line on result rows. */
+  const intel = useMemo(() => {
+    const map = new Map<string, TrendingRow>();
+    for (const r of clubLedger?.rows ?? []) map.set(r.ticker.toUpperCase(), r);
+    return map;
+  }, [clubLedger]);
 
   const load = useCallback(async () => {
     const {
@@ -596,25 +486,14 @@ export default function ScreenerSurface({
     });
 
     /* ── HOW MUCH UNIVERSE TO PULL, AND HOW ──────────────────────────────
-       WHAT WAS BROKEN. This used to compute `pages` from the row count (~11,500
-       → 12 pages) and fire EVERY page at once inside one `Promise.all`. Each of
-       those is a 1,000-row, 22-column read that the planner answers with a seq
-       scan and an ON-DISK merge sort (~270ms of server time each, verified on
-       the production table), so a single visit asked Postgres for a dozen
-       simultaneous disk sorts. Predictably some of them died on the statement
-       timeout — 57014, on `offset=3000` and `offset=7000` every load — and the
-       result was DISCARDED IN SILENCE by `if (r.data)`. The member was left
-       with whichever pages survived, roughly 4,000 rows, while the results
-       header said "4,000 MATCHES" as though that were the market.
-
-       WHAT HAPPENS NOW. Pages are fetched ONE AT A TIME, so the database is
-       never asked for more than one sort at once, and only up to
-       AUTO_UNIVERSE_ROWS of them load on their own. That window is the whole of
-       what any default view can show (sorted by market cap, the visible table
-       never reaches past it) and it covers every company a member is likely to
-       screen for. The rest of the tail loads when it is asked for — see
-       `loadMoreUniverse` — and until it does the surface SAYS SO next to the
-       match count. A page that fails now sets `universeError` and stops;
+       Pages are fetched ONE AT A TIME, so the database is never asked for
+       more than one on-disk sort at once (a 1,000-row, 22-column read is a
+       seq scan + merge sort, ~270ms server time each; a dozen at once used
+       to die on the statement timeout and be dropped IN SILENCE). Only up to
+       AUTO_UNIVERSE_ROWS load on their own — the whole of what any default
+       view can show — and the rest of the tail loads when it is asked for
+       (see `loadMoreUniverse`); until it does the surface SAYS SO next to
+       the match count. A page that fails sets `universeError` and stops;
        nothing is dropped quietly. */
     const pageQuery = (i: number) =>
       supabase
@@ -827,8 +706,7 @@ export default function ScreenerSurface({
     [results, page]
   );
   const pageCount = Math.max(1, Math.ceil(results.length / PAGE_SIZE));
-  /** Heat is scaled against the hottest name ON THIS PAGE, so the bars stay
-   *  readable whether the top row has 3 hearts or 300. */
+  /** Does the default Club-signal sort have anything to sort BY on this page? */
   const maxHeat = useMemo(
     () => pageRows.reduce((mx, r) => Math.max(mx, r.like_count ?? 0), 0),
     [pageRows]
@@ -885,6 +763,11 @@ export default function ScreenerSurface({
     setAppliedScreenId(null);
     setCustom((c) => ({ q: c.q }));
   }
+  function clearAsk() {
+    setNlInput("");
+    setNlNote(null);
+    setCustom((c) => ({ ...c, q: null }));
+  }
 
   async function addToFamily(r: ScreenerRow, alsoPromote: boolean) {
     if (!familyId || !userId || busy) return;
@@ -918,11 +801,10 @@ export default function ScreenerSurface({
   if (loading || !tierResolved) return <ScreenerSkeleton embedded={embedded} />;
 
   // FREE = BASIC FILTERS, not a closed door (PRICING_MATRIX "Screener / Stock
-  // Finder — free: Basic filters"). The full-page wall that used to stand here
-  // is gone: the Universe and Price-and-movement groups and the results table
-  // work, and the two things the Club actually buys — the Advanced group and
-  // saved screens — are metered inline where they live. The kid redirect / RLS
-  // wall is untouched and still governs the universe read.
+  // Finder — free: Basic filters"). The Universe / Size / Price-and-movement
+  // groups and the results run; the Academy group and saved screens are
+  // metered inline where they live. The kid redirect / RLS wall is untouched
+  // and still governs the universe read.
 
   const chips = activeChips(custom);
   /** Is every upstream row in hand? Drives what the match count claims. */
@@ -968,7 +850,7 @@ export default function ScreenerSurface({
             ariaLabel="Discover views"
             idPrefix="screener-tab"
             panelId="screener-panel"
-            className="mt-5"
+          className="mt-5"
           />
         </>
       )}
@@ -981,86 +863,116 @@ export default function ScreenerSurface({
         aria-labelledby={embedded ? undefined : "screener-tab-screener"}
         className={embedded ? "" : "mt-5"}
       >
-        {/* Search — one rounded terminal card, proper interior padding */}
-        <BoardCard
-          radius={14}
-          className="flex items-center gap-2.5 px-[15px] py-[11px]"
-        >
-          <Search className="h-4 w-4 shrink-0 text-soft" aria-hidden />
-          <input
-            value={custom.q ?? ""}
-            onChange={(e) => setCustom((c) => ({ ...c, q: e.target.value || null }))}
-            placeholder="Search by ticker or company name…"
-            aria-label="Search the universe"
-            className="min-w-0 flex-1 bg-transparent text-[13px] text-ink outline-none placeholder:text-soft/80"
-          />
-          {custom.q && (
-            <button
-              onClick={() => setCustom((c) => ({ ...c, q: null }))}
-              className="f0-focus shrink-0 rounded-full p-1 text-soft hover:text-ink"
-              aria-label="Clear search"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          )}
-        </BoardCard>
-
-        {/* ── Screen in plain English ───────────────────────────────────────
-            The surface's one AI affordance, so it wears Kai's violet — the
-            same card-with-a-kai-hairline anatomy as Discover's KAI
-            INTERPRETATION card. The parse is deterministic
-            (src/lib/screener-nl.ts): it only ever produces filters the panel
-            below can also produce, so a parsed screen and a hand-built one
-            are indistinguishable. Nothing recognised → honest keyword
-            fallback. */}
-        <BoardCard
-          radius={14}
-          className="mt-2.5 px-[15px] py-[13px]"
-          style={{
-            borderColor: "color-mix(in srgb, var(--kai-blue) 40%, var(--sand))",
+        {/* ── THE ASK BAR — the board's query-bar anatomy, whole ────────────
+            One rounded card, one sentence, the run arrow in the right slot.
+            It replaces the old keyword-input + NL-card pair: the parse is the
+            same deterministic src/lib/screener-nl.ts, and a phrase nothing
+            recognises degrades to the same name/ticker search the keyword
+            field used to run — one bar, both jobs. The violet spark marks it
+            as the surface's one AI affordance (Kai's color, never accent). */}
+        <form
+          role="search"
+          onSubmit={(e) => {
+            e.preventDefault();
+            runNL(nlInput);
           }}
         >
-          <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-kai-600 dark:text-kai-300">
-            <Sparkles className="h-3 w-3" />
-            Screen in plain English
-          </div>
-          <div className="relative mt-1.5">
+          <div className="flex items-center gap-2.5 rounded-[16px] border border-sand bg-card px-[15px] py-[13px] transition-colors focus-within:border-[color-mix(in_srgb,var(--kai-blue)_40%,var(--sand))]">
+            <Sparkles
+              className="h-4 w-4 shrink-0 text-kai-600 dark:text-kai-300"
+              aria-hidden
+            />
             <input
               value={nlInput}
               onChange={(e) => {
                 setNlInput(e.target.value);
                 if (nlNote) setNlNote(null);
               }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") runNL(nlInput);
-              }}
-              placeholder="e.g. Semis under $60 with rising volume"
-              className="w-full bg-transparent py-1 pr-10 text-[13px] text-ink outline-none placeholder:text-soft/80"
+              placeholder="Show me semis under $60 with rising volume…"
+              aria-label="Search a ticker, or describe a screen in plain English"
+              className="min-w-0 flex-1 bg-transparent text-[13px] text-ink outline-none placeholder:text-soft/80"
             />
-            <button
-              onClick={() => runNL(nlInput)}
-              disabled={!nlInput.trim()}
-              aria-label="Run plain-English screen"
-              className="f0-focus f0-press absolute right-0 top-1/2 inline-flex -translate-y-1/2 items-center rounded-full px-2 py-1.5 text-white transition disabled:opacity-40"
-              style={{ backgroundColor: "var(--kai-blue)" }}
-            >
-              <CornerDownLeft className="h-3.5 w-3.5" />
-            </button>
+            {(nlInput || custom.q) && (
+              <button
+                type="button"
+                onClick={clearAsk}
+                aria-label="Clear the ask"
+                className="f0-focus shrink-0 rounded-full p-1 text-soft transition-colors hover:text-ink"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+            {nlInput.trim() ? (
+              <button
+                type="submit"
+                aria-label="Run it"
+                className="f0-focus f0-press shrink-0 rounded-full p-1 text-gold-700"
+              >
+                <ArrowRight className="h-[17px] w-[17px]" />
+              </button>
+            ) : (
+              <Search className="h-4 w-4 shrink-0 text-soft" aria-hidden />
+            )}
           </div>
-          {/* The parse echo is a SENTENCE, so it reads in the body face —
-              mono is for values, never for prose. */}
-          {nlNote && (
-            <p className="mt-1.5 text-[11.5px] leading-snug text-soft">{nlNote}</p>
-          )}
-        </BoardCard>
+        </form>
+        {/* The parse echo is a SENTENCE, so it reads in the body face —
+            mono is for values, never for prose. */}
+        {nlNote && (
+          <p className="mt-1.5 text-[11.5px] leading-snug text-soft">{nlNote}</p>
+        )}
 
-        {/* ── Quick start — preset chips as raised wells ────────────────────
-            Every one-of-N choice on this surface is a chip in a raised dark
-            well; the live one takes the accent pill, and re-selecting it
-            clears it. */}
-        <div className="mt-6">
-          <SectionLabel>Quick start</SectionLabel>
-          <ScrollRow className="-m-1 mt-2 flex gap-[7px] p-1">
+        {/* ── ACTIVE FILTERS — the KAI INTERPRETATION register ──────────────
+            One compact "Filters · N" trigger into the sheet, then one accent
+            pill per live filter, each removable in place. This row IS the
+            standing record of the screen — there is no Apply anywhere. */}
+        <div className="club2-track -m-1 mt-3 flex flex-wrap items-center gap-[7px] p-1">
+          <button
+            type="button"
+            onClick={() => setSheetOpen(true)}
+            aria-haspopup="dialog"
+            aria-expanded={sheetOpen}
+            className="f0-focus f0-press inline-flex shrink-0 items-center gap-1.5 rounded-full border border-sand bg-midnight-800 px-[11px] py-[6px] text-[11.5px] font-semibold text-ink transition-colors hover:border-accent"
+          >
+            <SlidersHorizontal className="h-3.5 w-3.5 text-soft" aria-hidden />
+            Filters
+            {chips.length > 0 && (
+              <span className="font-mono text-[11px] font-bold tabular-nums text-gold-700">
+                {chips.length}
+              </span>
+            )}
+          </button>
+          {chips.map((c) => (
+            <WellChip
+              key={c.key}
+              as="button"
+              type="button"
+              active
+              onClick={() => clearFilter(c.key)}
+              className="f0-focus f0-press"
+              aria-label={`Remove the ${c.label} filter`}
+            >
+              {c.label}
+              <X className="h-3 w-3" />
+            </WellChip>
+          ))}
+          {chips.length > 0 && (
+            <button
+              onClick={clearAll}
+              className="f0-focus ml-1 rounded text-[10.5px] font-semibold text-soft underline hover:text-ink"
+            >
+              Clear all
+            </button>
+          )}
+        </div>
+
+        {/* ── Quick start — preset chips behind the board's inline prefix ── */}
+        <div
+          role="group"
+          aria-label="Quick start screens"
+          className="mt-6"
+        >
+          <ScrollRow className="-m-1 flex items-center gap-[7px] p-1">
+            <InlinePrefix>Quick start</InlinePrefix>
             {PRESETS.map((p) => (
               <WellChip
                 key={p.id}
@@ -1108,15 +1020,14 @@ export default function ScreenerSurface({
           </BoardCard>
         )}
 
-        {/* ── Your screens (board 15 · "Save screen") ───────────────────────
-            Real persistence, not a UI gesture: every chip here is a row in
-            screener_saved_screens. Rendered only once the read has landed —
-            `saved === null` is "not read yet", which must never take the
-            founding branch. */}
+        {/* ── Your screens — real persistence, not a UI gesture: every chip
+            here is a row in screener_saved_screens. Rendered only once the
+            read has landed — `saved === null` is "not read yet", which must
+            never take the founding branch. */}
         {saved !== null && saved.length > 0 && (
-          <div className="mt-6">
-            <SectionLabel>Your screens</SectionLabel>
-            <ScrollRow className="-m-1 mt-2 flex gap-[7px] p-1">
+          <div role="group" aria-label="Your saved screens" className="mt-4">
+            <ScrollRow className="-m-1 flex items-center gap-[7px] p-1">
+              <InlinePrefix>Your screens</InlinePrefix>
               {saved.map((s) => {
                 const on = appliedScreenId === s.id;
                 return (
@@ -1142,86 +1053,6 @@ export default function ScreenerSurface({
             </ScrollRow>
           </div>
         )}
-
-        {/* Filters — CHIP-FIRST, straight on the page (board vocabulary: the
-            KAI INTERPRETATION chip rows / Quick-start chips). No card, no
-            form skeleton: the disclosure is an inline white-caps control and
-            the open state pours flowing chip-group rows onto the page —
-            each group a wrap of pills behind a small soft-caps inline
-            prefix. */}
-        <div className="mt-6">
-          <button
-            onClick={() => setFiltersOpen((v) => !v)}
-            aria-expanded={filtersOpen}
-            className="f0-focus inline-flex items-center gap-2 text-left text-[13px] font-bold uppercase tracking-[0.06em] text-ink"
-          >
-            <SlidersHorizontal className="h-4 w-4 text-soft" />
-            Filters
-            {chips.length > 0 && (
-              <span className="font-mono text-[11px] font-bold tabular-nums text-gold-700">
-                {chips.length}
-              </span>
-            )}
-            <ChevronDown
-              className={`h-4 w-4 text-soft transition-transform ${filtersOpen ? "rotate-180" : ""}`}
-            />
-          </button>
-          <AnimatePresence initial={false}>
-            {filtersOpen && (
-              <m.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: "auto", opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                className="overflow-hidden"
-              >
-                <FilterPanel
-                  isFTA={isFTA}
-                  isKid={isKid}
-                  exchanges={exchanges}
-                  value={custom}
-                  patch={patchFilter}
-                />
-              </m.div>
-            )}
-          </AnimatePresence>
-        </div>
-
-        {/* Active filter chips — one accent pill per live filter ("Tech ✕"),
-            with a quiet raised-well "+ Filter" that opens the panel above. */}
-        <div className="mt-3">
-          <div className="club2-track -m-1 flex flex-wrap items-center gap-[7px] p-1">
-            {chips.map((c) => (
-              <WellChip
-                key={c.key}
-                as="button"
-                type="button"
-                active
-                onClick={() => clearFilter(c.key)}
-                className="f0-focus f0-press"
-                aria-label={`Remove the ${c.label} filter`}
-              >
-                {c.label}
-                <X className="h-3 w-3" />
-              </WellChip>
-            ))}
-            <WellChip
-              as="button"
-              type="button"
-              onClick={() => setFiltersOpen(true)}
-              className="f0-focus f0-press"
-            >
-              + Filter
-            </WellChip>
-            {chips.length > 0 && (
-              <button
-                onClick={clearAll}
-                className="f0-focus ml-1 rounded text-[10.5px] font-semibold text-soft underline hover:text-ink"
-              >
-                Clear all
-              </button>
-            )}
-          </div>
-        </div>
 
         {/* Results header — the terminal line:
             "14 MATCHES · SORTED BY CLUB SIGNAL"   ·   "Save screen" */}
@@ -1295,9 +1126,7 @@ export default function ScreenerSurface({
         </div>
 
         {/* ── WHAT WAS ACTUALLY SCREENED ───────────────────────────────────
-            The universe used to fail in silence: deep pages timed out, their
-            results were dropped, and nothing on the surface admitted it. Both
-            states are now stated — a partial window with the way to complete
+            Both partial states are stated — a window with the way to complete
             it, and an outright failure with what went wrong. */}
         {universeError && (
           <p className="mt-3 text-[11px] leading-snug text-soft">
@@ -1331,10 +1160,9 @@ export default function ScreenerSurface({
 
         {/* FOUNDING STATE. The surface opens on CLUB SIGNAL, and a club of nine
             tickers with one or two participants each has no signal to sort by —
-            so the default sort would silently degrade to an arbitrary order
-            with a column of dashes beside it. Say so, and hand over the one-tap
-            fix. Distinct from loading: the universe has already landed by the
-            time this can render. */}
+            so the default sort would silently degrade to an arbitrary order.
+            Say so, and hand over the one-tap fix. Distinct from loading: the
+            universe has already landed by the time this can render. */}
         {sortKey === "like_count" && results.length > 0 && maxHeat === 0 && (
           <FoundingLine className="mt-3">
             The Club hasn&apos;t warmed any of these names yet, so this list is in
@@ -1380,12 +1208,10 @@ export default function ScreenerSurface({
           )}
         </AnimatePresence>
 
-        {/* ── Results — the established ticker-row anatomy, at every
-            breakpoint: real logo tile · bold display-face ticker · line sparkline
-            (real 1m closes; month drift colors the curve) · mono price ·
-            green/red day move · signal chip. The extra readings the terminal
-            keeps (1m/3m/vol/cap/RSI) sit as mono type on a second line inside
-            the same row, with the row's actions — never ruled cells. */}
+        {/* ── Results — the board's discover result rows, verbatim anatomy:
+            40px round logo · bold display name · soft mono meta · green
+            "% Bullish" dot line (only when the ledger carries a real read) ·
+            mono ticker · bold price · real-closes sparkline · gold star. */}
         {results.length === 0 ? (
           <BoardCard radius={16} className="mt-3 px-5 py-12">
             <Telescope className="mb-3 h-7 w-7 text-gold-700" />
@@ -1399,18 +1225,19 @@ export default function ScreenerSurface({
           </BoardCard>
         ) : (
           <>
-            <div className="mt-3 flex flex-col gap-2">
+            <div className="mt-3 flex flex-col gap-2.5">
               {pageRows.map((r) => (
-                <ResultCard
+                <ScreenRow
                   key={r.ticker}
                   r={r}
+                  sortKey={sortKey}
+                  bullPct={
+                    intel.get(r.ticker.toUpperCase())?.sentiment?.bullPct ?? null
+                  }
+                  canStar={!!familyId}
+                  starred={!!added[r.ticker]}
                   busy={busy === r.ticker}
-                  added={added[r.ticker]}
-                  canAct={!!familyId}
-                  onOpen={() => openResearch(r.ticker)}
-                  onAddFamily={() => addToFamily(r, false)}
-                  onSuggest={() => addToFamily(r, true)}
-                  allowAlert={!isKid}
+                  onStar={() => addToFamily(r, false)}
                 />
               ))}
             </div>
@@ -1445,24 +1272,40 @@ export default function ScreenerSurface({
           </>
         )}
 
-        {/* ── Board 15's tail: conviction cards + trending chips ────────────
+        {/* ── The tail: conviction cards + trending chips ───────────────────
             Community data, off the shared attention ledger. Skipped when
             embedded (Discover's own Trending tab draws both) and skipped
             entirely when the Club has not formed a read — an empty pair of
             cards would be worse than no cards. */}
         {!embedded && <ClubTail ledger={clubLedger} />}
       </div>
+
+      {/* ── THE FILTER SHEET — bottom sheet on phones, side panel on desktop.
+          The full filter set lives here, grouped and roomy; every control
+          writes CustomFilters live, so the accent chips above are already the
+          record of what is applied by the time the sheet closes. */}
+      <FilterSheet
+        open={sheetOpen}
+        onClose={() => setSheetOpen(false)}
+        matchCount={results.length}
+        hasActive={chips.length > 0}
+        onClearAll={clearAll}
+        isFTA={isFTA}
+        isKid={isKid}
+        exchanges={exchanges}
+        value={custom}
+        patch={patchFilter}
+      />
     </div>
   );
 }
 
 /* ============================================================================
- * BOARD 15 TAIL — "Club's most bullish / most bearish" + "Trending in the Club"
+ * THE TAIL — "Club's most bullish / most bearish" + "Trending in the Club"
  *
- * The board draws the two conviction cards with a green and a pink hairline and
- * paints the percentages green/red. Both figures are COMMUNITY SENTIMENT, so
- * the bull card takes the lime sentiment ramp and the bear card an ink tint;
- * only the trending chips carry a real price move, and those keep green/red.
+ * Both figures are COMMUNITY SENTIMENT, so the bull card takes the lime
+ * sentiment ramp and the bear card an ink tint; only the trending chips carry
+ * a real price move, and those keep green/red.
  * ==========================================================================*/
 function ClubTail({ ledger }: { ledger: TrendingResponse | null }) {
   const rows = ledger?.rows ?? [];
@@ -1560,240 +1403,87 @@ function ConvictionCard({
 }
 
 /* ============================================================================
- * SCREENER SKELETON — the route's own furniture, not a generic list skeleton.
+ * RESULT ROW — one match, exactly as the board's DISCOVER phone draws it:
  *
- * The finished page furniture with only the parts that genuinely depend on
- * data left blank: the masthead and headline are real type, the tab rule sits
- * where the real tabs land, and the bones trace the ticker-row anatomy (logo
- * tile · two-line identity · sparkline slot · price stack) so the universe
- * fetch resolves without a layout swap.
+ *   (40px round logo)  Name (display bold)            SOUN     $5.32
+ *                      $7.2B · +12.4% 3m  (soft mono)      ~sparkline~   ★
+ *                      · 87% Bullish      (sentiment, only when real)
  *
- * Exported so the route shell (app/(dashboard)/screener/loading.tsx) renders
- * the identical thing and navigation does not shift.
+ * The sparkline is TickerSpark — the discover rows' own component: real daily
+ * closes off /api/market/bars, deferred until visible, deduplicated through a
+ * module cache, tinted by their true sign. The "% Bullish" line is the
+ * community ledger's real bull share for that ticker; absent = not drawn. The
+ * gold star is the family-watchlist add (the same write the old row action
+ * made); a member with no family gets NO star rather than a dead control.
+ * The whole row deep-links to research, where the deeper acts (suggest to
+ * community, alerts) live with full context.
  * ==========================================================================*/
-export function ScreenerSkeleton({ embedded = false }: { embedded?: boolean }) {
-  return (
-    <div
-      className={embedded ? "" : "mx-auto max-w-3xl px-4 pb-24 sm:px-6"}
-      aria-busy="true"
-    >
-      {!embedded && (
-        <>
-          <span className="font-display text-[13px] font-bold uppercase tracking-[0.24em] text-ink">
-            Discover
-          </span>
-          <h1 className="mt-3 font-display text-[24px] font-extrabold leading-[1.1] tracking-[-0.02em] text-ink">
-            Screen the whole market
-          </h1>
-          <Bone w={220} h={8} className="mt-2" />
-          <div className="mt-5 flex items-end gap-5 border-b border-sand pb-2.5">
-            <Bone w={52} h={10} />
-            <Bone w={62} h={10} />
-            <Bone w={58} h={10} />
-          </div>
-        </>
-      )}
 
-      {/* Search + Kai field + chips — real geometry, empty of data. */}
-      <div className={embedded ? "" : "mt-5"}>
-        <BoardCard radius={14} className="px-[15px] py-[13px]">
-          <Bone w="60%" h={12} />
-        </BoardCard>
-        <BoardCard radius={14} className="mt-2.5 space-y-2 px-[15px] py-[13px]">
-          <Bone w={150} h={8} />
-          <Bone w="70%" h={12} />
-        </BoardCard>
-        <div className="mt-6 flex gap-[7px]">
-          {[72, 88, 64, 96].map((w, i) => (
-            <Bone key={i} w={w} h={28} className="!rounded-full" />
-          ))}
-        </div>
-
-        <div className="mt-6 flex flex-col gap-2">
-          {Array.from({ length: 9 }).map((_, i) => (
-            <BoardCard key={i} radius={14} className="px-3.5 py-3">
-              <div className="flex items-center gap-3">
-                <Bone w={32} h={32} className="!rounded-[9px]" />
-                <span className="min-w-0 flex-1">
-                  <Bone w={48} h={10} />
-                  <Bone w={92} h={8} className="mt-1.5" />
-                </span>
-                <Bone w={64} h={12} className="hidden sm:block" />
-                <span>
-                  <Bone w={54} h={10} className="ml-auto" />
-                  <Bone w={38} h={8} className="ml-auto mt-1.5" />
-                </span>
-              </div>
-              <div className="mt-2.5 pl-[44px]">
-                <Bone w="55%" h={8} />
-              </div>
-            </BoardCard>
-          ))}
-        </div>
-      </div>
-      <span className="sr-only">Loading the market universe</span>
-    </div>
-  );
+/** The board's soft mono line 2 — the cap, then the reading the CURRENT SORT
+ *  is about, so a list sorted by RSI shows each row's RSI instead of making
+ *  the member take the order on faith. Only readings the feed supplied. */
+function rowMeta(r: ScreenerRow, sortKey: SortKey): string | null {
+  const parts: string[] = [];
+  if (r.mcap != null) parts.push(fmtMcap(r.mcap));
+  switch (sortKey) {
+    case "chg_1d":
+      if (r.chg_1d != null) parts.push(`${fmtPct(r.chg_1d)} 1d`);
+      break;
+    case "chg_5d":
+      if (r.chg_5d != null) parts.push(`${fmtPct(r.chg_5d)} 5d`);
+      break;
+    case "chg_1m":
+      if (r.chg_1m != null) parts.push(`${fmtPct(r.chg_1m)} 1m`);
+      break;
+    case "vol_ratio":
+      if (r.vol_ratio != null) parts.push(`${fmtRatio(r.vol_ratio)} vol`);
+      break;
+    case "rsi14":
+      if (r.rsi14 != null) parts.push(`RSI ${fmtRsi(r.rsi14)}`);
+      break;
+    default:
+      if (r.chg_3m != null) parts.push(`${fmtPct(r.chg_3m)} 3m`);
+  }
+  return parts.length > 0 ? parts.join(" · ") : null;
 }
 
-/* ============================================================================
- * SAVE SCREEN — canvas board 15's "Save screen", with a table behind it.
- *
- * Closed it is one orange word on the results header, the same weight as the
- * "How to use this" affordance beside it. Open it becomes a ruled name field
- * and a commit — no dialog, no modal, no boxed popover: the control expands in
- * place the way every other disclosure on this surface does.
- * ==========================================================================*/
-function SaveScreenControl({
-  name,
-  onName,
-  onSave,
-  saving,
-  error,
-  count,
-  locked = false,
-}: {
-  name: string;
-  onName: (v: string) => void;
-  onSave: () => void;
-  saving: boolean;
-  error: string | null;
-  count: number;
-  /** Free tier: the affordance stands, the last step is withheld. */
-  locked?: boolean;
-}) {
-  const [open, setOpen] = useState(false);
-
-  if (!open) {
-    // The primary CTA of the results line — the law's solid orange pill.
-    return (
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="f0-focus f0-press inline-flex items-center gap-1.5 rounded-full bg-accent px-3 py-[6px] text-[11px] font-bold text-night-950"
-      >
-        <Bookmark className="h-3.5 w-3.5" />
-        Save screen
-      </button>
-    );
-  }
-
-  /* THE WITHHELD LAST STEP. A free member reaches for "Save screen" and gets
-     the real answer — what a saved screen is and who has them — in the same
-     place the name field would have opened. Not a wall over the screener: the
-     scan they just built is still on the page behind this line. */
-  if (locked) {
-    return (
-      <span className="w-full">
-        <UnlockLine rule={false} className="mt-0" cta={wallFor("screener_full").cta}>
-          {SAVED_SCREENS_FREE_LINE}
-        </UnlockLine>
-      </span>
-    );
-  }
-
-  return (
-    <span className="inline-flex flex-wrap items-center gap-2">
-      <label className="inline-flex items-center gap-1.5">
-        <span className="sr-only">Name this screen</span>
-        <input
-          autoFocus
-          value={name}
-          maxLength={48}
-          onChange={(e) => onName(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") onSave();
-            if (e.key === "Escape") setOpen(false);
-          }}
-          placeholder="Name this screen"
-          className="w-44 rounded-[10px] border border-sand bg-midnight-800 px-3 py-[7px] font-display text-[13px] font-semibold text-ink outline-none transition-colors placeholder:font-normal placeholder:text-soft/70 focus:border-accent"
-        />
-      </label>
-      <button
-        type="button"
-        onClick={onSave}
-        disabled={!name.trim() || saving}
-        className="f0-focus f0-press rounded-full bg-accent px-3 py-[5px] text-[11px] font-bold text-night-950 disabled:opacity-40"
-      >
-        {saving ? "Saving…" : "Save"}
-      </button>
-      <button
-        type="button"
-        onClick={() => setOpen(false)}
-        aria-label="Cancel saving this screen"
-        className="f0-focus rounded text-soft hover:text-ink"
-      >
-        <X className="h-3.5 w-3.5" />
-      </button>
-      {/* Sentences read in the body face; only the COUNT is mono. */}
-      {error ? (
-        <span className="w-full text-[11.5px] leading-snug text-soft">{error}</span>
-      ) : (
-        <span className="w-full text-[11.5px] text-soft/80">
-          <span className="font-mono text-[11px] font-semibold tabular-nums">
-            {count} of {SAVED_SCREEN_LIMIT}
-          </span>{" "}
-          saved · reusing a name replaces it
-        </span>
-      )}
-    </span>
-  );
-}
-
-/* ============================================================================
- * RESULT ROW — one match, one quiet rounded row in the established ticker-row
- * anatomy (the same object MarketPulse / the watchlist movers draw):
- *
- *   [32px logo] TICKER (display bold)   [1m line sparkline]   $173.42   [78]
- *               Company name (soft)                         +4.7%
- *
- * The sparkline is REAL daily closes off /api/market/bars (see RowSpark); the
- * month's drift colors the curve while the day move colors the % — the two may
- * disagree, which is correct. The readings the terminal keeps beyond the
- * board's line (1m/3m/vol/cap/RSI) and the row's actions sit as mono type on a
- * second line inside the same row, so nothing the screener could do is lost.
- * ==========================================================================*/
-function ResultCard({
+function ScreenRow({
   r,
+  sortKey,
+  bullPct,
+  canStar,
+  starred,
   busy,
-  added,
-  canAct,
-  onOpen,
-  onAddFamily,
-  onSuggest,
-  allowAlert = true,
+  onStar,
 }: {
   r: ScreenerRow;
+  sortKey: SortKey;
+  bullPct: number | null;
+  canStar: boolean;
+  starred: boolean;
   busy: boolean;
-  added?: "family" | "community";
-  canAct: boolean;
-  onOpen: () => void;
-  onAddFamily: () => void;
-  onSuggest: () => void;
-  allowAlert?: boolean;
+  onStar: () => void;
 }) {
+  const t = r.ticker.toUpperCase();
+  const sub = rowMeta(r, sortKey);
   return (
-    <BoardCard
-      radius={14}
-      role="link"
-      tabIndex={0}
-      aria-label={`Open ${r.ticker} research`}
-      onClick={onOpen}
-      onKeyDown={(e: React.KeyboardEvent) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          onOpen();
-        }
-      }}
-      className="f0-focus group cursor-pointer px-3.5 py-3 transition-colors hover:border-accent"
-    >
-      {/* the identity line */}
-      <div className="flex items-center gap-3">
-        <CompanyLogo symbol={r.ticker} name={r.name} size={32} rounded="rounded-[9px]" />
+    <div className="relative">
+      <Link
+        href={researchHref(r.ticker)}
+        className={`f0-focus flex items-center gap-3 rounded-[16px] border border-sand bg-card p-[13px] transition-colors hover:border-accent ${
+          canStar ? "pr-11" : ""
+        }`}
+      >
+        <CompanyLogo
+          symbol={r.ticker}
+          name={r.name}
+          size={40}
+          rounded="rounded-full"
+        />
         <span className="min-w-0 flex-1">
           <span className="flex items-center gap-2">
-            <span className="truncate font-display text-[13.5px] font-bold leading-none text-ink">
-              {r.ticker}
+            <span className="truncate font-display text-[14.5px] font-bold leading-tight text-ink">
+              {r.name || t}
             </span>
             {r.type === "etf" && (
               <span className="shrink-0 font-mono text-[8.5px] font-bold uppercase tracking-[0.14em] text-soft">
@@ -1801,243 +1491,74 @@ function ResultCard({
               </span>
             )}
           </span>
-          <span className="mt-[4px] block truncate text-[11px] leading-none text-soft">
-            {r.name || "—"}
-          </span>
-        </span>
-        {/* the line sparkline — real 1m closes, month drift colors the curve */}
-        <span className="hidden w-[64px] shrink-0 sm:block">
-          <RowSpark symbol={r.ticker} />
+          {sub && (
+            <span className="mt-[3px] block truncate font-mono text-[11px] text-soft">
+              {sub}
+            </span>
+          )}
+          {bullPct != null && (
+            <span className="mt-[3px] flex items-center gap-1.5 text-[11.5px] font-semibold text-sentiment">
+              <span
+                aria-hidden
+                className="h-[5px] w-[5px] shrink-0 rounded-full"
+                style={{ backgroundColor: "var(--sentiment-fill)" }}
+              />
+              {bullPct}% Bullish
+            </span>
+          )}
         </span>
         <span className="shrink-0 text-right">
-          <span className="block font-mono text-[13px] font-semibold leading-none tabular-nums text-ink">
-            {fmtPrice(r.price)}
+          <span className="flex items-baseline justify-end gap-2.5">
+            <span className="font-mono text-[11px] uppercase text-soft">{t}</span>
+            <span className="font-mono text-[14px] font-semibold tabular-nums text-ink">
+              {fmtPrice(r.price)}
+            </span>
           </span>
-          <span
-            className={`mt-[4px] block font-mono text-[11px] font-semibold leading-none tabular-nums ${pctTone(r.chg_1d)}`}
-          >
-            {fmtPct(r.chg_1d)}
-          </span>
-        </span>
-        <HeatChip n={r.like_count} />
-      </div>
-
-      {/* everything the identity line has no room for — mono readings */}
-      <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1 pl-[44px]">
-        {r.exchange && (
-          <span className="hidden font-mono text-[8.5px] uppercase tracking-[0.14em] text-soft/70 sm:inline">
-            {formatExchange(r.exchange)}
-          </span>
-        )}
-        <span className="font-mono text-[10px] tabular-nums text-soft">
-          1m <span className={pctTone(r.chg_1m)}>{fmtPct(r.chg_1m)}</span>
-        </span>
-        <span className="font-mono text-[10px] tabular-nums text-soft">
-          3m <span className={pctTone(r.chg_3m)}>{fmtPct(r.chg_3m)}</span>
-        </span>
-        <span className="font-mono text-[10px] tabular-nums text-soft">
-          Vol <span className="text-ink">{fmtRatio(r.vol_ratio)}</span>
-        </span>
-        <span className="font-mono text-[10px] tabular-nums text-soft">
-          Cap <span className="text-ink">{fmtMcap(r.mcap)}</span>
-        </span>
-        <span className="font-mono text-[10px] tabular-nums text-soft">
-          RSI <span className="text-ink">{fmtRsi(r.rsi14)}</span>
-        </span>
-
-        {/* Actions can't hide behind hover on touch, so they sit on the line
-            rather than appearing only on the desktop hover state. */}
-        <span className="ml-auto" onClick={(e) => e.stopPropagation()}>
-          <RowActions
-            r={r}
-            busy={busy}
-            added={added}
-            canAct={canAct}
-            onAddFamily={onAddFamily}
-            onSuggest={onSuggest}
-            allowAlert={allowAlert}
-            compact
+          <TickerSpark
+            symbol={r.ticker}
+            width={76}
+            height={18}
+            className="ml-auto mt-[7px] block w-[76px]"
           />
         </span>
-      </div>
-    </BoardCard>
-  );
-}
-
-/* ============================================================================
- * Row actions (shared by table + card). Rendered inside a clickable row, so
- * each control stops click propagation (the wrapping cell/card also stops it)
- * to keep row-navigation from firing when a member adds/suggests/alerts.
- * ==========================================================================*/
-function RowActions({
-  r,
-  busy,
-  added,
-  canAct,
-  onAddFamily,
-  onSuggest,
-  compact,
-  allowAlert = true,
-}: {
-  r: ScreenerRow;
-  busy: boolean;
-  added?: "family" | "community";
-  canAct: boolean;
-  onAddFamily: () => void;
-  onSuggest: () => void;
-  compact?: boolean;
-  allowAlert?: boolean;
-}) {
-  if (added) {
-    // Confirmation is a COMMUNITY act, so it wears the sentiment ramp — not
-    // green (price). `text-sentiment` carries both theme steps, which is why
-    // the `dark:` variant this used to hand-write is gone.
-    return (
-      <span className="inline-flex items-center gap-1 whitespace-nowrap font-mono text-[10px] font-bold uppercase tracking-[0.12em] text-sentiment">
-        <Check className="h-3 w-3" />
-        {added === "community" ? "On the board" : "Watching"}
-      </span>
-    );
-  }
-  return (
-    <div className={`inline-flex items-center gap-1.5 ${compact ? "" : "flex-wrap"}`}>
-      <button
-        disabled={!canAct || busy}
-        onClick={(e) => {
-          e.stopPropagation();
-          onAddFamily();
-        }}
-        title="Add to family watchlist"
-        className="f0-press f0-focus inline-flex items-center gap-1 rounded-full border border-sand bg-midnight-800 px-2 py-1 text-[11px] font-semibold text-soft transition-colors hover:text-gold-700 disabled:opacity-50"
-      >
-        <Plus className="h-3.5 w-3.5" />
-        {compact ? "" : "Add to family watchlist"}
-      </button>
-      <button
-        disabled={!canAct || busy}
-        onClick={(e) => {
-          e.stopPropagation();
-          onSuggest();
-        }}
-        title="Suggest to community"
-        className="f0-press f0-focus inline-flex items-center gap-1 rounded-full border border-sand bg-midnight-800 px-2 py-1 text-[11px] font-semibold text-soft transition-colors hover:text-gold-700 disabled:opacity-50"
-      >
-        <Users2 className="h-3.5 w-3.5" />
-        {compact ? "" : "Suggest to community"}
-      </button>
-      {allowAlert && (
-        <SetAlertButton
-          ticker={r.ticker}
-          surface="screener"
-          defaultKind="price_cross"
-          seedPrice={r.price}
-          levels={impliedLevels(r)}
-          variant={compact ? "icon" : "chip"}
-          stopPropagation
-        />
-      )}
-      <Link
-        href={researchHref(r.ticker)}
-        onClick={(e) => e.stopPropagation()}
-        title="Research"
-        className="f0-focus inline-flex items-center gap-1 rounded-lg px-1.5 py-1 text-[11px] font-semibold text-gold-700 hover:underline"
-      >
-        Research
-        <ArrowRight className="h-3.5 w-3.5" />
       </Link>
+      {canStar && (
+        <button
+          type="button"
+          disabled={starred || busy}
+          onClick={onStar}
+          aria-label={
+            starred ? `${t} is on your watchlist` : `Add ${t} to your watchlist`
+          }
+          className="f0-focus f0-press absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-1.5"
+        >
+          <Star
+            aria-hidden
+            className={`h-4 w-4 ${
+              starred
+                ? "fill-current text-gold-700"
+                : "text-soft transition-colors hover:text-gold-700"
+            }`}
+          />
+        </button>
+      )}
     </div>
   );
 }
-
-/** Price levels prefilled into a screener-row alert (52-week high/low touches). */
-function impliedLevels(r: ScreenerRow): { label: string; price: number; op?: "above" | "below" }[] {
-  const out: { label: string; price: number; op?: "above" | "below" }[] = [];
-  if (r.price != null && r.dist_52w_high != null) {
-    const high = r.price / (1 + r.dist_52w_high / 100);
-    if (high > 0) out.push({ label: "52w high", price: high, op: "above" });
-  }
-  if (r.price != null && r.dist_52w_low != null) {
-    const low = r.price / (1 + r.dist_52w_low / 100);
-    if (low > 0) out.push({ label: "52w low", price: low, op: "below" });
-  }
-  return out;
-}
-
 /* ============================================================================
- * Active-filter chip descriptors.
- * ==========================================================================*/
-function activeChips(f: CustomFilters): { key: keyof CustomFilters; label: string }[] {
-  const out: { key: keyof CustomFilters; label: string }[] = [];
-  const cap = (v: number) => fmtMcap(v);
-  if (f.exchange) out.push({ key: "exchange", label: formatExchange(f.exchange) ?? f.exchange });
-  if (f.type) out.push({ key: "type", label: f.type === "etf" ? "ETFs" : "Common stocks" });
-  if (f.sector) out.push({ key: "sector", label: f.sector });
-  if (f.subsector) out.push({ key: "subsector", label: f.subsector });
-  if (f.minMcap != null) out.push({ key: "minMcap", label: `Cap ≥ ${cap(f.minMcap)}` });
-  if (f.maxMcap != null) out.push({ key: "maxMcap", label: `Cap ≤ ${cap(f.maxMcap)}` });
-  if (f.minPrice != null) out.push({ key: "minPrice", label: `Price ≥ $${f.minPrice}` });
-  if (f.maxPrice != null) out.push({ key: "maxPrice", label: `Price ≤ $${f.maxPrice}` });
-  if (f.minChg1d != null) out.push({ key: "minChg1d", label: `1d ≥ ${f.minChg1d}%` });
-  if (f.minChg5d != null) out.push({ key: "minChg5d", label: `5d ≥ ${f.minChg5d}%` });
-  if (f.minChg1m != null) out.push({ key: "minChg1m", label: `1m ≥ ${f.minChg1m}%` });
-  if (f.minChg3m != null) out.push({ key: "minChg3m", label: `3m ≥ ${f.minChg3m}%` });
-  if (f.minVolRatio != null) out.push({ key: "minVolRatio", label: `Vol ≥ ${f.minVolRatio}×` });
-  if (f.rsiMax != null) out.push({ key: "rsiMax", label: `RSI ≤ ${f.rsiMax}` });
-  if (f.rsiMin != null) out.push({ key: "rsiMin", label: `RSI ≥ ${f.rsiMin}` });
-  if (f.emaTrend) out.push({ key: "emaTrend", label: emaTrendLabel(f.emaTrend) });
-  if (f.nearHigh) out.push({ key: "nearHigh", label: "Near 52w high" });
-  if (f.nearLow) out.push({ key: "nearLow", label: "Near 52w low" });
-  if (f.minGap != null) out.push({ key: "minGap", label: `Gap ≥ ${f.minGap}%` });
-  if (f.maxGap != null) out.push({ key: "maxGap", label: `Gap ≤ ${f.maxGap}%` });
-  return out;
-}
-function emaTrendLabel(t: NonNullable<CustomFilters["emaTrend"]>): string {
-  return {
-    above20: "Above 20-day",
-    below20: "Below 20-day",
-    above50: "Above 50-day",
-    below50: "Below 50-day",
-    above2050: "Above both averages",
-  }[t];
-}
-
-/* ============================================================================
- * FILTERS — CHIP-FIRST, the board's own vocabulary. Not a form. Not a card.
- *
- * The previous pass was still a form skeleton wearing terminal paint: a card
- * with white-caps group heads, then a stacked label-over-control Field for
- * every filter. The owner's board never draws that object. Its filter
- * language is the KAI INTERPRETATION row — a small soft-caps prefix INLINE,
- * then pills flowing after it ("Market Cap < $20B", "Industry: AI") — and
- * the Quick-start chip rows. So the panel is now exactly that:
- *
- *   · each filter GROUP is ONE flowing wrap of pills (ChipRow) with the
- *     group name as a small soft-caps inline prefix — no stacked labels,
- *     no card, no ruled rows; the chips sit straight on the page
- *   · one-of-N options are the established raised-well pills (Chip) — an
- *     --m800 well at rest, the accent-tinted pill when live, MONO when the
- *     label is a numeric value ($50M+); labels are self-describing
- *     ("Any size", "Any trend") because nothing stacks above them anymore
- *   · the long lists (exchange / sector / subsector) are PILL-TRIGGERED
- *     choices via the surface's existing primitive — the sort control's
- *     pill-wrapped native select — so the closed state reads as a chip
- *     ("Any sector" quiet · "Technology" accent-lit) and the open state is
- *     the platform sheet/popover for free
- *   · numeric thresholds are compact MONO pill-wells (WellNum) inline —
- *     rounded-full --m800 wells, mono soft-caps unit affixes carrying the
- *     filter's identity ("$", "1D %", "VOL ≥ ×", "RSI ≤"), em-dash
- *     placeholder for unset, accent hairline on focus
- *
- * There is no Apply button because there never was one — every control writes
- * CustomFilters live, and the accent-pill active-filters row below is the
- * standing record of what is applied.
+ * THE FILTER SHEET — there is no filter-panel phone on the board, so this is
+ * the screener designed AS IF it were one: the full filter set in a BOTTOM
+ * SHEET on phones (the MobileTabBar More-sheet pattern, copied — backdrop,
+ * grabber, drag-to-dismiss) and a right-hand SIDE PANEL on desktop, grouped
+ * and roomy in the board's pill/well vocabulary. Every control writes
+ * CustomFilters LIVE — there is no Apply and never was — and the footer CTA
+ * states the live match count on its way out.
  *
  * Every filter that existed still exists and still writes the SAME key on
- * CustomFilters, so the preset buttons, the active-filter chips and the
+ * CustomFilters, so the presets, the accent active-filter chips and the
  * plain-English parser (src/lib/screener-nl.ts) all keep working untouched —
  * a screen built here and a screen parsed from a sentence stay identical.
- *
- * Tiers: advanced technical filters stay FTA-only; kids never see the upsell.
+ * Tiers: Academy technical filters stay FTA-only; kids never see the upsell.
  * ==========================================================================*/
 const MCAP_STEPS: { label: string; value: number }[] = [
   { label: "$50M+", value: 50_000_000 },
@@ -2047,7 +1568,7 @@ const MCAP_STEPS: { label: string; value: number }[] = [
   { label: "$50B+", value: 50_000_000_000 },
 ];
 
-/** The four "minimum move" windows — one row, four inline mono fields. */
+/** The four "minimum move" windows — inline mono fields. */
 const MOVE_FIELDS: { key: "minChg1d" | "minChg5d" | "minChg1m" | "minChg3m"; label: string }[] = [
   { key: "minChg1d", label: "1d" },
   { key: "minChg5d", label: "5d" },
@@ -2064,225 +1585,322 @@ const EMA_OPTIONS: { value: NonNullable<CustomFilters["emaTrend"]>; label: strin
   { value: "above2050", label: "Above both averages" },
 ];
 
-function FilterPanel({
+/** Which chrome the sheet wears — bottom sheet under md, side panel above.
+ *  Resolved from the same 768px line Tailwind's `md:` uses, synced live. */
+function useIsDesktop(): boolean {
+  const [desk, setDesk] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 768px)");
+    const sync = () => setDesk(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
+  return desk;
+}
+
+function FilterSheet({
+  open,
+  onClose,
+  matchCount,
+  hasActive,
+  onClearAll,
   isFTA,
   isKid,
   exchanges,
   value,
   patch,
 }: {
+  open: boolean;
+  onClose: () => void;
+  matchCount: number;
+  hasActive: boolean;
+  onClearAll: () => void;
   isFTA: boolean;
   isKid: boolean;
   exchanges: string[];
   value: CustomFilters;
   patch: (p: Partial<CustomFilters>) => void;
 }) {
+  const desktop = useIsDesktop();
   const selectedSector = (value.sector as Sector | null) ?? null;
   const subsectorOptions = selectedSector ? SUBSECTORS[selectedSector] : [];
 
+  // Lock background scroll while the sheet is open (More-sheet discipline).
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [open]);
+
+  function onSheetDragEnd(_: unknown, info: PanInfo) {
+    if (info.offset.y > 90 || info.velocity.y > 600) onClose();
+  }
+
   return (
-    <div className="flex flex-col gap-[13px] pb-1 pt-3.5">
-      {/* ── What to look at — one flowing chip row ──────────────────────── */}
-      <ChipRow label="Universe">
-        <PillSelect
-          ariaLabel="Exchange"
-          live={!!value.exchange}
-          value={value.exchange ?? ""}
-          onChange={(v) => patch({ exchange: v || null })}
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          key="filter-backdrop"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          onClick={onClose}
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 md:items-stretch md:justify-end"
         >
-          <option value="">Any exchange</option>
-          {exchanges.map((e) => (
-            <option key={e} value={e}>
-              {formatExchange(e)}
-            </option>
-          ))}
-        </PillSelect>
-
-        <PillSelect
-          ariaLabel="Sector"
-          live={!!value.sector}
-          value={value.sector ?? ""}
-          /* Changing the sector clears any subsector chosen under the old one. */
-          onChange={(v) => patch({ sector: v || null, subsector: null })}
-        >
-          <option value="">Any sector</option>
-          {SECTORS.map((s) => (
-            <option key={s} value={s}>
-              {s}
-            </option>
-          ))}
-        </PillSelect>
-
-        <PillSelect
-          ariaLabel="Subsector"
-          live={!!value.subsector}
-          value={value.subsector ?? ""}
-          onChange={(v) => patch({ subsector: v || null })}
-          disabled={!selectedSector}
-        >
-          {/* The old stacked hint ("Choose a sector first") now lives IN the
-              pill — the disabled chip says why it's asleep. */}
-          <option value="">
-            {selectedSector ? "Any subsector" : "Pick a sector first"}
-          </option>
-          {subsectorOptions.map((s) => (
-            <option key={s} value={s}>
-              {s}
-            </option>
-          ))}
-        </PillSelect>
-
-        <Chip active={!value.type} onClick={() => patch({ type: null })}>
-          Stocks + ETFs
-        </Chip>
-        <Chip
-          active={value.type === "common"}
-          onClick={() => patch({ type: "common" })}
-        >
-          Common stocks
-        </Chip>
-        <Chip active={value.type === "etf"} onClick={() => patch({ type: "etf" })}>
-          ETFs
-        </Chip>
-      </ChipRow>
-
-      {/* ── Market cap floor — self-describing pills, mono values ───────── */}
-      <ChipRow label="Size">
-        <Chip active={value.minMcap == null} onClick={() => patch({ minMcap: null })}>
-          Any size
-        </Chip>
-        {MCAP_STEPS.map((s) => (
-          <Chip
-            key={s.label}
-            mono
-            active={value.minMcap === s.value}
-            onClick={() => patch({ minMcap: s.value })}
+          <motion.div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Screener filters"
+            initial={desktop ? { x: "100%" } : { y: "100%" }}
+            animate={desktop ? { x: 0 } : { y: 0 }}
+            exit={desktop ? { x: "100%" } : { y: "100%" }}
+            transition={{ type: "tween", duration: 0.22 }}
+            drag={desktop ? false : "y"}
+            dragConstraints={{ top: 0, bottom: 0 }}
+            dragElastic={{ top: 0, bottom: 0.5 }}
+            onDragEnd={desktop ? undefined : onSheetDragEnd}
+            onClick={(e) => e.stopPropagation()}
+            className="flex max-h-[85vh] w-full flex-col overflow-hidden rounded-t-2xl border-t border-sand bg-card shadow-[0_-8px_40px_rgba(0,0,0,0.35)] md:h-full md:max-h-none md:w-[400px] md:rounded-none md:border-l md:border-t-0"
+            style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
           >
-            {s.label}
-          </Chip>
-        ))}
-      </ChipRow>
+            {/* Grabber (phones) */}
+            <div className="flex shrink-0 justify-center pb-1 pt-2.5 md:hidden">
+              <span className="h-1.5 w-10 rounded-full bg-midnight-800" />
+            </div>
 
-      {/* ── How it is trading — mono pill-wells in the flow. Each well's
-             soft-caps mono affix carries its identity ($, the window, VOL)
-             now that nothing stacks above it. ─────────────────────────── */}
-      <ChipRow label="Price + movement">
-        <WellNum
-          ariaLabel="Minimum price"
-          prefix="$"
-          value={value.minPrice}
-          onChange={(v) => patch({ minPrice: v })}
-        />
-        <span className="text-[11px] text-soft">to</span>
-        <WellNum
-          ariaLabel="Maximum price"
-          prefix="$"
-          value={value.maxPrice}
-          onChange={(v) => patch({ maxPrice: v })}
-        />
-        {MOVE_FIELDS.map((f) => (
-          <WellNum
-            key={f.key}
-            ariaLabel={`Minimum ${f.label} move percent`}
-            prefix={f.label}
-            suffix="%"
-            width="w-12"
-            value={value[f.key]}
-            onChange={(v) => patch({ [f.key]: v } as Partial<CustomFilters>)}
-          />
-        ))}
-        <WellNum
-          ariaLabel="Minimum relative volume"
-          prefix="vol ≥"
-          suffix="×"
-          value={value.minVolRatio}
-          onChange={(v) => patch({ minVolRatio: v })}
-        />
-      </ChipRow>
+            {/* Head — the terminal's white-caps register + close */}
+            <div className="flex shrink-0 items-center justify-between px-5 pb-3 pt-2 md:pt-5">
+              <SectionLabel>Filters</SectionLabel>
+              <button
+                type="button"
+                onClick={onClose}
+                aria-label="Close filters"
+                className="f0-focus rounded-full p-1 text-soft transition-colors hover:text-ink"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
 
-      {/* ── Advanced (FTA) ──────────────────────────────────────────────── */}
-      {isFTA ? (
-        <ChipRow label="Academy">
-          <WellNum
-            ariaLabel="RSI at or below"
-            prefix="rsi ≤"
-            width="w-10"
-            value={value.rsiMax}
-            onChange={(v) => patch({ rsiMax: v })}
-          />
-          <WellNum
-            ariaLabel="RSI at or above"
-            prefix="rsi ≥"
-            width="w-10"
-            value={value.rsiMin}
-            onChange={(v) => patch({ rsiMin: v })}
-          />
-          <WellNum
-            ariaLabel="Gap up at or above percent"
-            prefix="gap up ≥"
-            suffix="%"
-            width="w-12"
-            value={value.minGap}
-            onChange={(v) => patch({ minGap: v })}
-          />
-          <WellNum
-            ariaLabel="Gap down at or below percent"
-            prefix="gap down ≤"
-            suffix="%"
-            width="w-12"
-            value={value.maxGap}
-            onChange={(v) => patch({ maxGap: v })}
-          />
-          <Chip active={!value.emaTrend} onClick={() => patch({ emaTrend: null })}>
-            Any trend
-          </Chip>
-          {EMA_OPTIONS.map((o) => (
-            <Chip
-              key={o.value}
-              active={value.emaTrend === o.value}
-              onClick={() => patch({ emaTrend: o.value })}
-            >
-              {o.label}
-            </Chip>
-          ))}
-          <Chip
-            active={!!value.nearHigh}
-            onClick={() => patch({ nearHigh: value.nearHigh ? null : true })}
-          >
-            Near 52w high
-          </Chip>
-          <Chip
-            active={!!value.nearLow}
-            onClick={() => patch({ nearLow: value.nearLow ? null : true })}
-          >
-            Near 52w low
-          </Chip>
-        </ChipRow>
-      ) : (
-        !isKid && (
-          <div className="mt-1 flex items-start gap-2 text-[12.5px] leading-snug text-soft">
-            <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-gold-600" />
-            <span>
-              Advanced technical filters — RSI, moving-average trend, gap and 52-week
-              highs and lows — are part of the Family Trading Academy.{" "}
-              <Link href="/upgrade" className="font-semibold text-gold-700">
-                Explore FTA →
-              </Link>
-            </span>
-          </div>
-        )
+            {/* The groups — roomy, the board's pill/well vocabulary. Rhythm
+                stays uneven: 10px label→chips, 22px between groups. */}
+            <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-5">
+              <FilterGroup label="Universe">
+                <PillSelect
+                  ariaLabel="Exchange"
+                  live={!!value.exchange}
+                  value={value.exchange ?? ""}
+                  onChange={(v) => patch({ exchange: v || null })}
+                >
+                  <option value="">Any exchange</option>
+                  {exchanges.map((e) => (
+                    <option key={e} value={e}>
+                      {formatExchange(e)}
+                    </option>
+                  ))}
+                </PillSelect>
+                <PillSelect
+                  ariaLabel="Sector"
+                  live={!!value.sector}
+                  value={value.sector ?? ""}
+                  /* Changing the sector clears any subsector under the old one. */
+                  onChange={(v) => patch({ sector: v || null, subsector: null })}
+                >
+                  <option value="">Any sector</option>
+                  {SECTORS.map((s) => (
+                    <option key={s} value={s}>
+                      {s}
+                    </option>
+                  ))}
+                </PillSelect>
+                <PillSelect
+                  ariaLabel="Subsector"
+                  live={!!value.subsector}
+                  value={value.subsector ?? ""}
+                  onChange={(v) => patch({ subsector: v || null })}
+                  disabled={!selectedSector}
+                >
+                  {/* The disabled chip says why it's asleep. */}
+                  <option value="">
+                    {selectedSector ? "Any subsector" : "Pick a sector first"}
+                  </option>
+                  {subsectorOptions.map((s) => (
+                    <option key={s} value={s}>
+                      {s}
+                    </option>
+                  ))}
+                </PillSelect>
+                <Chip active={!value.type} onClick={() => patch({ type: null })}>
+                  Stocks + ETFs
+                </Chip>
+                <Chip
+                  active={value.type === "common"}
+                  onClick={() => patch({ type: "common" })}
+                >
+                  Common stocks
+                </Chip>
+                <Chip active={value.type === "etf"} onClick={() => patch({ type: "etf" })}>
+                  ETFs
+                </Chip>
+              </FilterGroup>
+
+              <FilterGroup label="Size">
+                <Chip active={value.minMcap == null} onClick={() => patch({ minMcap: null })}>
+                  Any size
+                </Chip>
+                {MCAP_STEPS.map((s) => (
+                  <Chip
+                    key={s.label}
+                    mono
+                    active={value.minMcap === s.value}
+                    onClick={() => patch({ minMcap: s.value })}
+                  >
+                    {s.label}
+                  </Chip>
+                ))}
+              </FilterGroup>
+
+              <FilterGroup label="Price + movement">
+                <WellNum
+                  ariaLabel="Minimum price"
+                  prefix="$"
+                  value={value.minPrice}
+                  onChange={(v) => patch({ minPrice: v })}
+                />
+                <span className="text-[11px] text-soft">to</span>
+                <WellNum
+                  ariaLabel="Maximum price"
+                  prefix="$"
+                  value={value.maxPrice}
+                  onChange={(v) => patch({ maxPrice: v })}
+                />
+                {MOVE_FIELDS.map((f) => (
+                  <WellNum
+                    key={f.key}
+                    ariaLabel={`Minimum ${f.label} move percent`}
+                    prefix={f.label}
+                    suffix="%"
+                    width="w-12"
+                    value={value[f.key]}
+                    onChange={(v) => patch({ [f.key]: v } as Partial<CustomFilters>)}
+                  />
+                ))}
+                <WellNum
+                  ariaLabel="Minimum relative volume"
+                  prefix="vol ≥"
+                  suffix="×"
+                  value={value.minVolRatio}
+                  onChange={(v) => patch({ minVolRatio: v })}
+                />
+              </FilterGroup>
+
+              {isFTA ? (
+                <FilterGroup label="Academy">
+                  <WellNum
+                    ariaLabel="RSI at or below"
+                    prefix="rsi ≤"
+                    width="w-10"
+                    value={value.rsiMax}
+                    onChange={(v) => patch({ rsiMax: v })}
+                  />
+                  <WellNum
+                    ariaLabel="RSI at or above"
+                    prefix="rsi ≥"
+                    width="w-10"
+                    value={value.rsiMin}
+                    onChange={(v) => patch({ rsiMin: v })}
+                  />
+                  <WellNum
+                    ariaLabel="Gap up at or above percent"
+                    prefix="gap up ≥"
+                    suffix="%"
+                    width="w-12"
+                    value={value.minGap}
+                    onChange={(v) => patch({ minGap: v })}
+                  />
+                  <WellNum
+                    ariaLabel="Gap down at or below percent"
+                    prefix="gap down ≤"
+                    suffix="%"
+                    width="w-12"
+                    value={value.maxGap}
+                    onChange={(v) => patch({ maxGap: v })}
+                  />
+                  <Chip active={!value.emaTrend} onClick={() => patch({ emaTrend: null })}>
+                    Any trend
+                  </Chip>
+                  {EMA_OPTIONS.map((o) => (
+                    <Chip
+                      key={o.value}
+                      active={value.emaTrend === o.value}
+                      onClick={() => patch({ emaTrend: o.value })}
+                    >
+                      {o.label}
+                    </Chip>
+                  ))}
+                  <Chip
+                    active={!!value.nearHigh}
+                    onClick={() => patch({ nearHigh: value.nearHigh ? null : true })}
+                  >
+                    Near 52w high
+                  </Chip>
+                  <Chip
+                    active={!!value.nearLow}
+                    onClick={() => patch({ nearLow: value.nearLow ? null : true })}
+                  >
+                    Near 52w low
+                  </Chip>
+                </FilterGroup>
+              ) : (
+                !isKid && (
+                  <div className="mt-[22px] flex items-start gap-2 text-[12.5px] leading-snug text-soft">
+                    <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-gold-600" />
+                    <span>
+                      Advanced technical filters — RSI, moving-average trend, gap and 52-week
+                      highs and lows — are part of the Family Trading Academy.{" "}
+                      <Link href="/upgrade" className="font-semibold text-gold-700">
+                        Explore FTA →
+                      </Link>
+                    </span>
+                  </div>
+                )
+              )}
+            </div>
+
+            {/* Footer — the one solid-accent CTA states the LIVE count (every
+                control above already applied itself), plus the quiet reset. */}
+            <div className="flex shrink-0 items-center gap-3 border-t border-sand px-5 py-3.5">
+              <button
+                type="button"
+                onClick={onClose}
+                className="f0-focus f0-press flex-1 rounded-full bg-accent px-4 py-2.5 text-[13px] font-bold text-night-950"
+              >
+                Show {matchCount.toLocaleString()}{" "}
+                {matchCount === 1 ? "match" : "matches"}
+              </button>
+              {hasActive && (
+                <button
+                  type="button"
+                  onClick={onClearAll}
+                  className="f0-focus rounded text-[11.5px] font-semibold text-soft underline hover:text-ink"
+                >
+                  Clear all
+                </button>
+              )}
+            </div>
+          </motion.div>
+        </motion.div>
       )}
-    </div>
+    </AnimatePresence>
   );
 }
 
-/* ── Chip row ──────────────────────────────────────────────────────────────
-   One filter GROUP as one flowing wrap: a small soft-caps prefix INLINE (the
-   board's KAI INTERPRETATION register — soft gray, +0.1em tracking, sitting
-   in the flow before its chips, never stacked above them), then the pills
-   and wells wrapping like the board's chip rows. role="group" keeps the
-   prefix announced with the controls it introduces. */
-function ChipRow({
+/** One filter group inside the sheet: white-caps label, then a roomy wrap of
+ *  the board's pills and wells. 10px label→chips, 22px between groups. */
+function FilterGroup({
   label,
   children,
 }: {
@@ -2290,28 +1908,19 @@ function ChipRow({
   children: React.ReactNode;
 }) {
   return (
-    <div
-      role="group"
-      aria-label={label}
-      className="flex flex-wrap items-center gap-2"
-    >
-      <span
-        aria-hidden
-        className="mr-0.5 shrink-0 text-[10.5px] font-bold uppercase tracking-[0.1em] text-soft"
-      >
+    <div role="group" aria-label={label} className="mt-[22px] first:mt-1">
+      <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-ink">
         {label}
-      </span>
-      {children}
+      </p>
+      <div className="mt-2.5 flex flex-wrap items-center gap-2">{children}</div>
     </div>
   );
 }
-
 /* ── Pill-triggered choice ─────────────────────────────────────────────────
-   The long lists (exchange / sector / subsector) as the surface's existing
-   pill-select primitive (the sort control's anatomy): a rounded-full chip
-   wrapping a native select, so the closed state reads as one more pill in
-   the flow — quiet --m800 well while "Any", the accent-tinted pill once a
-   choice is live — and tapping it opens the platform's own popover/sheet. */
+   The long lists (exchange / sector / subsector) as a pill-wrapped native
+   select: the closed state reads as one more pill in the flow — quiet --m800
+   well while "Any", the accent-tinted pill once a choice is live — and
+   tapping it opens the platform's own popover/sheet for free. */
 function PillSelect({
   value,
   onChange,
@@ -2439,5 +2048,216 @@ function Chip({
     >
       {children}
     </button>
+  );
+}
+
+/* ============================================================================
+ * SAVE SCREEN — with a real table behind it.
+ *
+ * Closed it is one orange pill on the results header. Open it becomes a ruled
+ * name field and a commit — no dialog, no modal: the control expands in place
+ * the way every other disclosure on this surface does.
+ * ==========================================================================*/
+function SaveScreenControl({
+  name,
+  onName,
+  onSave,
+  saving,
+  error,
+  count,
+  locked = false,
+}: {
+  name: string;
+  onName: (v: string) => void;
+  onSave: () => void;
+  saving: boolean;
+  error: string | null;
+  count: number;
+  /** Free tier: the affordance stands, the last step is withheld. */
+  locked?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+
+  if (!open) {
+    // The primary CTA of the results line — the law's solid orange pill.
+    return (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="f0-focus f0-press inline-flex items-center gap-1.5 rounded-full bg-accent px-3 py-[6px] text-[11px] font-bold text-night-950"
+      >
+        <Bookmark className="h-3.5 w-3.5" />
+        Save screen
+      </button>
+    );
+  }
+
+  /* THE WITHHELD LAST STEP. A free member reaches for "Save screen" and gets
+     the real answer — what a saved screen is and who has them — in the same
+     place the name field would have opened. Not a wall over the screener: the
+     scan they just built is still on the page behind this line. */
+  if (locked) {
+    return (
+      <span className="w-full">
+        <UnlockLine rule={false} className="mt-0" cta={wallFor("screener_full").cta}>
+          {SAVED_SCREENS_FREE_LINE}
+        </UnlockLine>
+      </span>
+    );
+  }
+
+  return (
+    <span className="inline-flex flex-wrap items-center gap-2">
+      <label className="inline-flex items-center gap-1.5">
+        <span className="sr-only">Name this screen</span>
+        <input
+          autoFocus
+          value={name}
+          maxLength={48}
+          onChange={(e) => onName(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") onSave();
+            if (e.key === "Escape") setOpen(false);
+          }}
+          placeholder="Name this screen"
+          className="w-44 rounded-[10px] border border-sand bg-midnight-800 px-3 py-[7px] font-display text-[13px] font-semibold text-ink outline-none transition-colors placeholder:font-normal placeholder:text-soft/70 focus:border-accent"
+        />
+      </label>
+      <button
+        type="button"
+        onClick={onSave}
+        disabled={!name.trim() || saving}
+        className="f0-focus f0-press rounded-full bg-accent px-3 py-[5px] text-[11px] font-bold text-night-950 disabled:opacity-40"
+      >
+        {saving ? "Saving…" : "Save"}
+      </button>
+      <button
+        type="button"
+        onClick={() => setOpen(false)}
+        aria-label="Cancel saving this screen"
+        className="f0-focus rounded text-soft hover:text-ink"
+      >
+        <X className="h-3.5 w-3.5" />
+      </button>
+      {/* Sentences read in the body face; only the COUNT is mono. */}
+      {error ? (
+        <span className="w-full text-[11.5px] leading-snug text-soft">{error}</span>
+      ) : (
+        <span className="w-full text-[11.5px] text-soft/80">
+          <span className="font-mono text-[11px] font-semibold tabular-nums">
+            {count} of {SAVED_SCREEN_LIMIT}
+          </span>{" "}
+          saved · reusing a name replaces it
+        </span>
+      )}
+    </span>
+  );
+}
+
+/* ============================================================================
+ * Active-filter chip descriptors.
+ * ==========================================================================*/
+function activeChips(f: CustomFilters): { key: keyof CustomFilters; label: string }[] {
+  const out: { key: keyof CustomFilters; label: string }[] = [];
+  const cap = (v: number) => fmtMcap(v);
+  if (f.exchange) out.push({ key: "exchange", label: formatExchange(f.exchange) ?? f.exchange });
+  if (f.type) out.push({ key: "type", label: f.type === "etf" ? "ETFs" : "Common stocks" });
+  if (f.sector) out.push({ key: "sector", label: f.sector });
+  if (f.subsector) out.push({ key: "subsector", label: f.subsector });
+  if (f.minMcap != null) out.push({ key: "minMcap", label: `Cap ≥ ${cap(f.minMcap)}` });
+  if (f.maxMcap != null) out.push({ key: "maxMcap", label: `Cap ≤ ${cap(f.maxMcap)}` });
+  if (f.minPrice != null) out.push({ key: "minPrice", label: `Price ≥ $${f.minPrice}` });
+  if (f.maxPrice != null) out.push({ key: "maxPrice", label: `Price ≤ $${f.maxPrice}` });
+  if (f.minChg1d != null) out.push({ key: "minChg1d", label: `1d ≥ ${f.minChg1d}%` });
+  if (f.minChg5d != null) out.push({ key: "minChg5d", label: `5d ≥ ${f.minChg5d}%` });
+  if (f.minChg1m != null) out.push({ key: "minChg1m", label: `1m ≥ ${f.minChg1m}%` });
+  if (f.minChg3m != null) out.push({ key: "minChg3m", label: `3m ≥ ${f.minChg3m}%` });
+  if (f.minVolRatio != null) out.push({ key: "minVolRatio", label: `Vol ≥ ${f.minVolRatio}×` });
+  if (f.rsiMax != null) out.push({ key: "rsiMax", label: `RSI ≤ ${f.rsiMax}` });
+  if (f.rsiMin != null) out.push({ key: "rsiMin", label: `RSI ≥ ${f.rsiMin}` });
+  if (f.emaTrend) out.push({ key: "emaTrend", label: emaTrendLabel(f.emaTrend) });
+  if (f.nearHigh) out.push({ key: "nearHigh", label: "Near 52w high" });
+  if (f.nearLow) out.push({ key: "nearLow", label: "Near 52w low" });
+  if (f.minGap != null) out.push({ key: "minGap", label: `Gap ≥ ${f.minGap}%` });
+  if (f.maxGap != null) out.push({ key: "maxGap", label: `Gap ≤ ${f.maxGap}%` });
+  return out;
+}
+function emaTrendLabel(t: NonNullable<CustomFilters["emaTrend"]>): string {
+  return {
+    above20: "Above 20-day",
+    below20: "Below 20-day",
+    above50: "Above 50-day",
+    below50: "Below 50-day",
+    above2050: "Above both averages",
+  }[t];
+}
+
+/* ============================================================================
+ * SCREENER SKELETON — the route's own furniture, not a generic list skeleton.
+ *
+ * The finished page furniture with only the parts that genuinely depend on
+ * data left blank: the masthead and headline are real type, the ask bar and
+ * chip row hold their geometry, and the bones trace the board's result-row
+ * anatomy (40px round logo · two-line identity · ticker/price baseline ·
+ * sparkline slot) so the universe fetch resolves without a layout swap.
+ *
+ * Exported so the route shell (app/(dashboard)/screener/loading.tsx) renders
+ * the identical thing and navigation does not shift.
+ * ==========================================================================*/
+export function ScreenerSkeleton({ embedded = false }: { embedded?: boolean }) {
+  return (
+    <div
+      className={embedded ? "" : "mx-auto max-w-3xl px-4 pb-24 sm:px-6"}
+      aria-busy="true"
+    >
+      {!embedded && (
+        <>
+          <span className="font-display text-[13px] font-bold uppercase tracking-[0.24em] text-ink">
+            Discover
+          </span>
+          <h1 className="mt-3 font-display text-[24px] font-extrabold leading-[1.1] tracking-[-0.02em] text-ink">
+            Screen the whole market
+          </h1>
+          <Bone w={220} h={8} className="mt-2" />
+          <div className="mt-5 flex items-end gap-5 border-b border-sand pb-2.5">
+            <Bone w={52} h={10} />
+            <Bone w={62} h={10} />
+            <Bone w={58} h={10} />
+          </div>
+        </>
+      )}
+
+      {/* Ask bar + chip row — real geometry, empty of data. */}
+      <div className={embedded ? "" : "mt-5"}>
+        <div className="rounded-[16px] border border-sand bg-card px-[15px] py-[13px]">
+          <Bone w="60%" h={12} />
+        </div>
+        <div className="mt-3 flex gap-[7px]">
+          {[76, 88, 64, 96].map((w, i) => (
+            <Bone key={i} w={w} h={28} className="!rounded-full" />
+          ))}
+        </div>
+
+        <div className="mt-6 flex flex-col gap-2.5">
+          {Array.from({ length: 9 }).map((_, i) => (
+            <div
+              key={i}
+              className="flex items-center gap-3 rounded-[16px] border border-sand bg-card p-[13px]"
+            >
+              <Bone w={40} h={40} className="!rounded-full" />
+              <span className="min-w-0 flex-1">
+                <Bone w={130} h={11} />
+                <Bone w={90} h={9} className="mt-2" />
+              </span>
+              <span>
+                <Bone w={76} h={11} className="ml-auto" />
+                <Bone w={76} h={9} className="ml-auto mt-2" />
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+      <span className="sr-only">Loading the market universe</span>
+    </div>
   );
 }

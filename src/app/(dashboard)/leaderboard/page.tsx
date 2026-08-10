@@ -372,8 +372,32 @@ function LeaderboardInner() {
   // Is "me" already visible in the rows? If not, pin the me-row at the bottom.
   const meInRows = ind.me ? ind.rows.some((r) => r.id === ind.me!.id) : false;
 
+  // The board block, shared by both skins; the club branch wraps it to carry
+  // its own rhythm (the terminal page is uneven by law — no space-y stack).
+  const board = loading ? (
+    <CardSkeleton />
+  ) : dimension === "individuals" ? (
+    <IndividualsBoard
+      ind={ind}
+      meInRows={meInRows}
+      periodLabel={periodLabel}
+      scope={scope}
+      meOffBoard={meOffBoard}
+      club={isClub}
+    />
+  ) : (
+    <FamiliesBoard fams={fams} myFamilyId={myFamilyId} periodLabel={periodLabel} />
+  );
+
   return (
-    <div className="mx-auto max-w-2xl space-y-4 pb-16">
+    /* CLUB: uneven terminal rhythm (mast→rail 24px, rail→board 14px,
+       board→footnote 28px via margins below) — never a uniform space-y stack.
+       FAMILY: the original wrapper, byte-identical. */
+    <div
+      className={
+        isClub ? "mx-auto max-w-2xl pb-16" : "mx-auto max-w-2xl space-y-4 pb-16"
+      }
+    >
       <m.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }}>
         {isClub ? (
           /* Terminal masthead — caps, the loudest type on the screen. */
@@ -401,7 +425,7 @@ function LeaderboardInner() {
       {/* Controls. Club gets the trader-voiced window rail; family gets the
           dimension rail plus a quieter period/scope pair beneath it. All three
           are the same primitive — one keyboard model across the surface. */}
-      <div className="space-y-3">
+      <div className={isClub ? "mt-6" : "space-y-3"}>
         {isClub ? (
           <SegmentedRail
             options={CLUB_PERIODS}
@@ -453,26 +477,13 @@ function LeaderboardInner() {
         )}
       </div>
 
-      {loading ? (
-        <CardSkeleton />
-      ) : dimension === "individuals" ? (
-        <IndividualsBoard
-          ind={ind}
-          meInRows={meInRows}
-          periodLabel={periodLabel}
-          scope={scope}
-          meOffBoard={meOffBoard}
-          club={isClub}
-        />
-      ) : (
-        <FamiliesBoard fams={fams} myFamilyId={myFamilyId} periodLabel={periodLabel} />
-      )}
+      {isClub ? <div className="mt-3.5">{board}</div> : board}
 
       {/* How rank works — honest about the XP that actually drives rank today.
           No accuracy %, no win rate: neither exists in the payload, and neither
           may be added to it. */}
       {isClub && (
-        <section className="space-y-2.5 pt-3">
+        <section className="mt-7 space-y-2.5">
           {/* Terminal section head — white bold caps, never tiny gray mono. */}
           <h2 className="text-[13px] font-bold uppercase tracking-[0.06em] text-ink">
             How rank works

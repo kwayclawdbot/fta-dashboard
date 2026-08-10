@@ -22,12 +22,13 @@ import { Cashtag, FoundingNote } from "./parts";
  * CLUB COMMUNITY — the owner's Aug-7 mockup board (club terminal phone,
  * "COMMUNITY" screen), built to the drawing:
  *
- *   · a ROW OF NEON-RING CIRCLES up top (segmented multicolour rings, dark
- *     company face inside, "NVDA / 8d left" beneath) — these are the REAL
- *     Circles (club_circles, migration 190): title, ticker mark and the live
- *     countdown, each ring linking into its /circles/[slug] room. When no
- *     Circle is open the row renders the feed's real member faces instead
- *     (stated adaptation — never an invented countdown).
+ *   · a ROW OF NEON-RING CIRCLES up top, first thing under the masthead
+ *     (segmented multicolour rings, dark company face inside, "NVDA / 8d
+ *     left" beneath) — these are the REAL Circles (club_circles, migration
+ *     190): title, ticker mark and the live countdown, each ring linking
+ *     into its /circles/[slug] room. CIRCLES ONLY — when no Circle is open
+ *     the row renders nothing at all (owner ruling 2026-08-10; no member-face
+ *     fallback, never an invented countdown).
  *   · the FOR YOU · FOLLOWING · TRENDING tab row with the accent underline.
  *   · POST CARDS in the mockup's anatomy: avatar with a stance dot, author +
  *     authority check, standing line ("Black belt · 2h" — the app's REAL
@@ -448,20 +449,6 @@ export default function ClubCommunityScreen({ seed, circles }: Props) {
     return posts; // For You — the seeded order (pinned, then newest).
   }, [tab, posts, followedAuthors, likeCount, commentCount]);
 
-  /* ── the ring row: open Circles first, real member faces as fallback ── */
-  const memberFaces = useMemo(() => {
-    const seen = new Set<string>();
-    const out: FeedAuthor[] = [];
-    for (const p of posts) {
-      const a = p.author;
-      if (!a?.id || seen.has(a.id)) continue;
-      seen.add(a.id);
-      out.push(a);
-      if (out.length >= 8) break;
-    }
-    return out;
-  }, [posts]);
-
   return (
     <MentionProvider map={seed?.mentions ?? {}}>
       <div className="mx-auto max-w-2xl">
@@ -473,60 +460,40 @@ export default function ClubCommunityScreen({ seed, circles }: Props) {
           </h1>
         </header>
 
-        {/* ── the neon ring row ── */}
-        <div className="mt-4 flex items-start justify-between gap-3">
-          <div className="-mx-1 flex flex-1 gap-3 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {circles.length > 0
-              ? circles.map((c, i) => {
-                  const left = timeLeft(c.expires_at);
-                  return (
-                    <CircleRing
-                      key={c.id}
-                      index={i}
-                      title={c.ticker ?? c.title}
-                      sub={left ? `${left} left` : "closing"}
-                      href={`/circles/${c.slug}`}
-                      face={
-                        c.ticker ? (
-                          <TickerMark ticker={c.ticker} size={40} radius={20} />
-                        ) : (
-                          <span className="font-display text-[15px] font-black uppercase text-ink">
-                            {c.title.slice(0, 1)}
-                          </span>
-                        )
-                      }
-                    />
-                  );
-                })
-              : memberFaces.map((a, i) => (
+        {/* ── the neon ring row — open Circles only; no Circles, no row ── */}
+        {circles.length > 0 && (
+          <div className="mt-4 flex items-start justify-between gap-3">
+            <div className="-mx-1 flex flex-1 gap-3 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {circles.map((c, i) => {
+                const left = timeLeft(c.expires_at);
+                return (
                   <CircleRing
-                    key={a.id}
+                    key={c.id}
                     index={i}
-                    title={(a.display_name || "Member").split(" ")[0]}
-                    sub={
-                      seed?.beltXp?.[a.id]
-                        ? `${beltForXp(seed.beltXp[a.id]).short} belt`
-                        : null
-                    }
-                    href={a.username ? `/u/${a.username}` : "/circles"}
+                    title={c.ticker ?? c.title}
+                    sub={left ? `${left} left` : "closing"}
+                    href={`/circles/${c.slug}`}
                     face={
-                      <Avatar
-                        name={a.display_name}
-                        avatarUrl={a.avatar_url}
-                        size="lg"
-                        className="!h-[48px] !w-[48px]"
-                      />
+                      c.ticker ? (
+                        <TickerMark ticker={c.ticker} size={40} radius={20} />
+                      ) : (
+                        <span className="font-display text-[15px] font-black uppercase text-ink">
+                          {c.title.slice(0, 1)}
+                        </span>
+                      )
                     }
                   />
-                ))}
+                );
+              })}
+            </div>
+            <Link
+              href="/circles"
+              className="f0-focus mt-5 shrink-0 font-display text-[11px] font-bold uppercase tracking-[0.08em] text-gold-700 hover:text-gold-600"
+            >
+              Circles
+            </Link>
           </div>
-          <Link
-            href="/circles"
-            className="f0-focus mt-5 shrink-0 font-display text-[11px] font-bold uppercase tracking-[0.08em] text-gold-700 hover:text-gold-600"
-          >
-            Circles
-          </Link>
-        </div>
+        )}
 
         {/* ── For You · Following · Trending ── */}
         <div role="tablist" aria-label="Community feed" className="mt-4 flex gap-7 border-b border-sand">

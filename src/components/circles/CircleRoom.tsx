@@ -27,6 +27,7 @@ import {
   BoardMasthead,
   SectionLabel,
 } from "@/app/(dashboard)/community/board";
+import { useAppMode } from "@/lib/useAppMode";
 
 /* ══════════════════════════════════════════════════════════════════════════
    ONE CIRCLE — the room (canvas v2, App board 16 → detail). /circles/[slug].
@@ -83,6 +84,9 @@ const STANCE_WORD: Record<CircleStance, string> = {
 };
 
 export default function CircleRoomSurface({ slug }: { slug: string }) {
+  // CLUB-TERMINAL-STYLE sweep 2026-08-10: club gets a raised-well composer
+  // (no gold-hover underline input); family render byte-identical.
+  const isClub = useAppMode() === "club";
   const [room, setRoom] = useState<Room | null>(null);
   const [loading, setLoading] = useState(true);
   const [missingSchema, setMissingSchema] = useState(false);
@@ -325,7 +329,11 @@ export default function CircleRoomSurface({ slug }: { slug: string }) {
             rows={4}
             onChange={(e) => setBody(e.target.value)}
             placeholder="What do you actually think, and what would change your mind?"
-            className="f0-focus f0-rule-bottom w-full resize-none bg-transparent pb-2 text-[15px] leading-relaxed text-ink placeholder:text-soft/70 focus:outline-none focus:border-gold-600"
+            className={
+              isClub
+                ? "f0-focus w-full resize-none rounded-[10px] border border-sand bg-card px-3 py-2 text-[15px] leading-relaxed text-ink placeholder:text-soft/70 focus:outline-none focus:border-accent"
+                : "f0-focus f0-rule-bottom w-full resize-none bg-transparent pb-2 text-[15px] leading-relaxed text-ink placeholder:text-soft/70 focus:outline-none focus:border-gold-600"
+            }
           />
           <div className="flex flex-wrap items-center justify-between gap-3">
             <p className="font-mono text-[11px] tabular-nums text-soft">

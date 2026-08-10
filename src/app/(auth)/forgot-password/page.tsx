@@ -47,7 +47,10 @@ export default function ForgotPasswordPage() {
 
   if (success) {
     return (
+      // `entry-card`: inert in light; the club terminal's clean --card panel
+      // in club-dark (globals.css ENTRY TERMINAL).
       <m.div
+        className="entry-card"
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
@@ -82,6 +85,7 @@ export default function ForgotPasswordPage() {
 
   return (
     <m.div
+      className="entry-card"
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}

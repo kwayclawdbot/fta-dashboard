@@ -233,12 +233,12 @@ export default function MarketPulse({
                     {c.ticker}
                   </span>
                 </span>
-                <span className="mt-2.5 block font-display text-[17px] font-extrabold leading-none text-ink tabular-nums">
+                <span className="mt-2.5 block font-mono text-[16px] font-semibold leading-none text-ink tabular-nums">
                   ${c.price.toFixed(2)}
                 </span>
                 {c.changePct != null && (
                   <span
-                    className={`mt-[7px] block text-[12.5px] font-semibold leading-none tabular-nums ${
+                    className={`mt-[7px] block font-mono text-[12px] font-semibold leading-none tabular-nums ${
                       up ? "text-price-up" : "text-price-down"
                     }`}
                   >

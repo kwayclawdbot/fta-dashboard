@@ -143,7 +143,7 @@ export default function ProfileOnboardingPage() {
           <div
             key={s}
             className={`h-2 rounded-full transition-all ${
-              i === step ? "w-6 bg-gold-500" : i < step ? "w-2 bg-gold-400/50" : "w-2 bg-sand"
+              i === step ? "w-6 bg-accent" : i < step ? "w-2 bg-gold-400/50" : "w-2 bg-sand"
             }`}
           />
         ))}
@@ -202,7 +202,7 @@ export default function ProfileOnboardingPage() {
           {isWelcome ? (
             <button
               onClick={finish}
-              className="f0-focus f0-press flex items-center gap-2 rounded-xl bg-accent px-5 py-2.5 font-display text-sm font-bold tracking-[0.02em] text-[color:var(--accent-on)]"
+              className="entry-cta f0-focus f0-press flex items-center gap-2 rounded-xl bg-accent px-5 py-2.5 font-display text-sm font-bold tracking-[0.02em] text-[color:var(--accent-on)]"
             >
               Go to my dashboard
               <ArrowRight className="w-4 h-4" />
@@ -210,7 +210,7 @@ export default function ProfileOnboardingPage() {
           ) : (
             <button
               onClick={() => advance(step === S_HEAR)}
-              className="f0-focus f0-press flex items-center gap-2 rounded-xl bg-accent px-5 py-2.5 font-display text-sm font-bold tracking-[0.02em] text-[color:var(--accent-on)]"
+              className="entry-cta f0-focus f0-press flex items-center gap-2 rounded-xl bg-accent px-5 py-2.5 font-display text-sm font-bold tracking-[0.02em] text-[color:var(--accent-on)]"
             >
               Continue
               <ArrowRight className="w-4 h-4" />

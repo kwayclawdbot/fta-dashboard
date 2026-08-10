@@ -347,7 +347,7 @@ function ClubWatchlist({
       {/* ── + Add Ticker (routes through the page's limit-aware openAdd) ─── */}
       <button
         onClick={onAdd}
-        className="f0-focus f0-press mt-4 flex w-full items-center justify-center gap-1.5 rounded-2xl border border-sand bg-card py-3.5 text-[14px] font-semibold text-ink transition hover:bg-midnight-800"
+        className="f0-focus f0-press mt-4 flex w-full items-center justify-center gap-1.5 rounded-[16px] border border-sand bg-card py-3.5 text-[14px] font-semibold text-ink transition hover:bg-midnight-800"
       >
         <Plus className="h-4 w-4" />
         Add Ticker
@@ -578,8 +578,8 @@ function ClubPortfolio() {
   if (pf === undefined) {
     return (
       <div className="mt-4 space-y-3">
-        <div className="h-56 animate-pulse rounded-2xl border border-sand bg-card" />
-        <div className="h-24 animate-pulse rounded-2xl border border-sand bg-card" />
+        <div className="h-56 animate-pulse rounded-[16px] border border-sand bg-card" />
+        <div className="h-24 animate-pulse rounded-[16px] border border-sand bg-card" />
       </div>
     );
   }
@@ -587,7 +587,7 @@ function ClubPortfolio() {
   /* ── No practice portfolio yet — the layout states itself honestly ────── */
   if (pf === null) {
     return (
-      <div className="mt-4 rounded-2xl border border-sand bg-card p-5">
+      <div className="mt-4 rounded-[16px] border border-sand bg-card p-5">
         <p className="flex items-center gap-1.5 text-[12px] font-semibold text-soft">
           Total Value <Info className="h-3.5 w-3.5" />
         </p>
@@ -622,14 +622,14 @@ function ClubPortfolio() {
       </div>
 
       {/* ── Total Value card ─────────────────────────────────────────────── */}
-      <div className="mt-3 rounded-2xl border border-sand bg-card p-4 sm:p-5">
+      <div className="mt-3 rounded-[16px] border border-sand bg-card p-4 sm:p-5">
         <p
           className="flex items-center gap-1.5 text-[12px] font-semibold text-soft"
           title="Practice-floor equity: cash balance plus holdings at the latest (delayed ~15 min) prices."
         >
           Total Value <Info className="h-3.5 w-3.5" />
         </p>
-        <p className="mt-1 font-display text-[32px] font-bold tabular-nums leading-none text-ink">
+        <p className="mt-1 font-mono text-[32px] font-bold tabular-nums leading-none text-ink">
           {equityNow != null ? money(equityNow) : "—"}
         </p>
         {change != null && changePct != null ? (
