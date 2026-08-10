@@ -1,46 +1,66 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
-import { Check, Download, Loader2, Share2 } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import { Check, Download, Loader2, Share2, X, ChevronRight } from "lucide-react";
 import CompanyLogo from "@/components/fic/CompanyLogo";
 import ClubMark from "@/components/brand/ClubMark";
+import { m } from "@/lib/motion";
+import {
+  GlowPct,
+  KaiVoice,
+  PlanRail,
+  kaiOutcomeLine,
+  money,
+  pctStr,
+  tickerAccent,
+} from "@/components/alerts/poster";
 import type { AlertOutcome } from "@/lib/alerts/history";
 
 /* ══════════════════════════════════════════════════════════════════════════
-   SHARE OUTCOME CARD — a resolved Kai alert as a branded, shareable object.
+   SHARE OUTCOME CARD — rebuilt 2026-08-10 as the FULL shareable result card
+   (owner ruling): the cheatcode-os ShareCard visual language, big, on club
+   tokens — radial accent glow, giant gradient ticker, glowing counted-up %,
+   Entry → Peak rail, held/date line, brand footer, on-card disclaimer.
 
-   Prior art: the Kai dashboard's win detail (cheatcode-os ShareCard /
-   KaiWinDetailPage) — huge ticker, glowing peak %, an Entry→Peak rail, a
-   mono brand footer and a PNG export. This is that design adapted onto the
-   club terminal law: semantic tokens only, Inter display, IBM Plex Mono
-   numerals, ClubMark + the violet KAI mark, and the honesty framing (peak
-   favourable move, winners AND losers, disclaimer on the card itself).
+   Three objects in this file:
+     • ShareOutcomeCard (default) — the big card itself, with Share + Save
+       image (the existing native-canvas 1080×1080 PNG export, unchanged)
+       and an optional "See the story" deep link to /alerts/s/[id].
+     • ResultShareModal — the overlay presentation History opens when a
+       winner/loser poster is clicked.
+     • OutcomePoster — the History feed's mini result poster (logo, gradient
+       ticker, glowing result %, one Kai closing line, date).
 
-   Actions (no new npm deps — html-to-image is not in this repo):
-     • Share — navigator.share of a text summary + link, clipboard fallback.
-     • Save image — the card re-drawn onto a native <canvas> (1080×1080)
-       using the live CSS tokens + loaded font stacks, downloaded as PNG.
+   HONESTY: the % is the recorded peak favourable move, wins AND losses get
+   the identical object, and the disclaimer rides the card + every export.
    ══════════════════════════════════════════════════════════════════════════ */
-
-function money(n: number): string {
-  return n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
-
-function pctStr(n: number | null): string {
-  if (n == null) return "—";
-  return `${n >= 0 ? "+" : ""}${n.toFixed(1)}%`;
-}
-
-const DIR_GLYPH: Record<string, string> = { long: "↑", short: "↓", watch: "•" };
 
 const DISCLAIMER = "Educational analysis, not advice.";
 
-export default function ShareOutcomeCard({ o, won }: { o: AlertOutcome; won: boolean }) {
+function accentFor(o: AlertOutcome): string {
+  return (o.peakPct ?? 0) >= 0 ? "var(--color-price-up)" : "var(--color-price-down)";
+}
+
+export default function ShareOutcomeCard({
+  o,
+  won,
+  storyHref,
+  onClose,
+}: {
+  o: AlertOutcome;
+  won: boolean;
+  /** Deep link to the setup's story page — rendered only when it exists. */
+  storyHref?: string | null;
+  /** When presented inside the modal, the close affordance. */
+  onClose?: () => void;
+}) {
   const cardRef = useRef<HTMLDivElement>(null);
   const [copied, setCopied] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  const peakTone = (o.peakPct ?? 0) >= 0 ? "text-price-up" : "text-price-down";
+  const accent = accentFor(o);
+  const hue = tickerAccent(o.ticker);
   const issued = new Date(o.issued_at).toLocaleDateString(undefined, {
     month: "short",
     day: "numeric",
@@ -54,7 +74,7 @@ export default function ShareOutcomeCard({ o, won }: { o: AlertOutcome; won: boo
     const text =
       `KAI on $${o.ticker}: ${pctStr(o.peakPct)} peak favourable move${dur}${legs}. ` +
       `Winners and losers, tracked in the open. ${DISCLAIMER}`;
-    const url = `${window.location.origin}/alerts#track`;
+    const url = `${window.location.origin}/alerts#history`;
     try {
       if (typeof navigator.share === "function") {
         await navigator.share({ title: `KAI · $${o.ticker}`, text, url });
@@ -92,115 +112,241 @@ export default function ShareOutcomeCard({ o, won }: { o: AlertOutcome; won: boo
   return (
     <div
       ref={cardRef}
-      className="flex flex-col rounded-[16px] border p-[15px]"
+      className="relative w-full overflow-hidden rounded-[20px] border p-5 sm:p-6"
       style={{
-        borderColor: "color-mix(in srgb, var(--kai-blue) 26%, var(--sand))",
-        background:
-          "linear-gradient(150deg, color-mix(in srgb, var(--kai-blue) 8%, var(--card)) 0%, var(--card) 58%)",
+        borderColor: `color-mix(in srgb, ${accent} 30%, var(--sand))`,
+        background: `radial-gradient(120% 80% at 0% 0%, color-mix(in srgb, ${accent} 14%, transparent), transparent 60%), radial-gradient(120% 80% at 100% 100%, color-mix(in srgb, ${hue} 10%, transparent), transparent 55%), var(--card)`,
       }}
     >
-      {/* brand head — ClubMark + the violet KAI mark, date on the right */}
-      <div className="flex items-center gap-2">
-        <ClubMark size={15} />
+      {/* the radial glow blob */}
+      <span
+        aria-hidden
+        className="absolute -right-16 -top-24 h-64 w-64 rounded-full opacity-20 blur-3xl"
+        style={{ background: accent }}
+      />
+
+      {/* brand head — ClubMark + the violet KAI mark, date right, close */}
+      <div className="relative z-[1] flex items-center gap-2">
+        <ClubMark size={16} />
         <span className="font-display text-[11px] font-extrabold uppercase tracking-[0.22em] text-kai-blue">
           Kai
         </span>
         <span className="ml-auto font-mono text-[9.5px] uppercase tracking-[0.1em] text-soft/70">
           {issued}
         </span>
+        {onClose && (
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="f0-focus -mr-1 shrink-0 rounded-full p-1 text-soft transition hover:text-ink"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        )}
       </div>
 
-      {/* identity — logo · ticker · setup */}
-      <div className="mt-3 flex items-center gap-2.5">
-        <CompanyLogo symbol={o.ticker} name={o.ticker} size={34} rounded="rounded-[10px]" />
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-            <span className="font-display text-[16px] font-extrabold leading-[1.1] tracking-tight text-ink">
-              ${o.ticker}
-            </span>
-            <span className="inline-flex items-center gap-1 rounded-full bg-paper px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.1em] text-soft">
-              <span aria-hidden>{DIR_GLYPH[o.direction] ?? DIR_GLYPH.watch}</span>
-              {o.direction}
-            </span>
+      {/* the giant gradient ticker */}
+      <div className="relative z-[1] mt-5 flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <div
+            className="font-display font-black leading-[0.92] tracking-[-0.04em]"
+            style={{
+              fontSize: o.ticker.length > 4 ? 44 : 54,
+              background: `linear-gradient(180deg, var(--ink) 0%, ${accent} 140%)`,
+              WebkitBackgroundClip: "text",
+              backgroundClip: "text",
+              color: "transparent",
+            }}
+          >
+            ${o.ticker}
           </div>
-          {o.setup_label && (
-            <p className="mt-0.5 truncate text-[11px] text-soft/85">{o.setup_label}</p>
-          )}
+          <p className="mt-2 font-mono text-[9.5px] uppercase tracking-[0.18em] text-soft/70">
+            {[o.direction, o.setup_label].filter(Boolean).join(" · ")}
+          </p>
         </div>
+        <CompanyLogo symbol={o.ticker} name={o.ticker} size={40} rounded="rounded-[12px]" />
       </div>
 
-      {/* the big mono outcome */}
-      <div className="mt-3 flex items-end justify-between gap-3">
-        <p className={`font-mono text-[30px] font-bold leading-none tabular-nums ${peakTone}`}>
-          {pctStr(o.peakPct)}
-        </p>
-        <p className="pb-0.5 text-right font-mono text-[9px] uppercase leading-[1.5] tracking-[0.12em] text-soft/70">
-          Peak move
-          {o.daysToPeak != null && (
-            <>
-              <br />
-              held {o.daysToPeak}d
-            </>
-          )}
+      {/* the glowing % */}
+      <div className="relative z-[1] mt-5">
+        <GlowPct value={o.peakPct ?? 0} size={56} />
+        <p className="mt-2 font-mono text-[9.5px] uppercase tracking-[0.18em] text-soft/70">
+          Peak favourable move
+          {o.daysToPeak != null && ` · held ${o.daysToPeak}d`}
         </p>
       </div>
 
       {/* entry → peak rail */}
       {o.peakPrice != null && (
-        <div className="mt-3 flex items-center gap-2.5 rounded-[12px] border border-sand bg-paper/60 px-3 py-2">
-          <span className="shrink-0">
-            <span className="block font-mono text-[8.5px] uppercase tracking-[0.14em] text-soft/70">
-              Entry
-            </span>
-            <span className="mt-0.5 block font-mono text-[13px] font-semibold tabular-nums text-ink">
-              ${money(o.snapshot_price)}
-            </span>
-          </span>
-          <span
-            aria-hidden
-            className="h-px min-w-0 flex-1"
-            style={{
-              background:
-                "linear-gradient(90deg, transparent, color-mix(in srgb, var(--kai-blue) 65%, transparent), transparent)",
-            }}
-          />
-          <span className="shrink-0 text-right">
-            <span className="block font-mono text-[8.5px] uppercase tracking-[0.14em] text-soft/70">
-              Peak
-            </span>
-            <span
-              className={`mt-0.5 block font-mono text-[13px] font-semibold tabular-nums ${peakTone}`}
-            >
-              ${money(o.peakPrice)}
-            </span>
-          </span>
-        </div>
+        <PlanRail
+          className="relative z-[1] mt-5 rounded-[13px] border border-sand bg-paper/60 px-4 py-3"
+          from={{ label: "Entry", value: o.snapshot_price }}
+          to={{ label: "Peak", value: o.peakPrice, color: accent }}
+          accent={accent}
+        />
       )}
 
-      {/* actions + the on-card disclaimer */}
-      <div className="mt-3 flex items-center gap-2 border-t border-sand pt-2.5">
-        <p className="min-w-0 flex-1 truncate font-mono text-[8.5px] uppercase tracking-[0.1em] text-soft/60">
-          {DISCLAIMER}
-        </p>
+      {/* Kai's closing line */}
+      <KaiVoice size="md" className="relative z-[1] mt-4">
+        {kaiOutcomeLine(won)}
+      </KaiVoice>
+
+      {/* actions */}
+      <div className="relative z-[1] mt-5 flex flex-wrap items-center gap-2">
         <button
           type="button"
           onClick={share}
-          className="f0-focus f0-press inline-flex shrink-0 items-center gap-1.5 rounded-full border border-sand bg-card px-2.5 py-1.5 font-mono text-[9.5px] font-semibold uppercase tracking-[0.1em] text-ink transition hover:border-kai-500/50"
+          className="f0-focus f0-press inline-flex items-center gap-1.5 rounded-full border border-sand bg-card px-3.5 py-2 font-mono text-[10px] font-semibold uppercase tracking-[0.1em] text-ink transition hover:border-kai-500/50"
         >
-          {copied ? <Check className="h-3 w-3 text-kai-600" /> : <Share2 className="h-3 w-3" />}
+          {copied ? <Check className="h-3.5 w-3.5 text-kai-600" /> : <Share2 className="h-3.5 w-3.5" />}
           {copied ? "Copied" : "Share"}
         </button>
         <button
           type="button"
           onClick={saveImage}
           disabled={saving}
-          className="f0-focus f0-press inline-flex shrink-0 items-center gap-1.5 rounded-full border border-sand bg-card px-2.5 py-1.5 font-mono text-[9.5px] font-semibold uppercase tracking-[0.1em] text-ink transition hover:border-kai-500/50 disabled:opacity-60"
+          className="f0-focus f0-press inline-flex items-center gap-1.5 rounded-full border border-sand bg-card px-3.5 py-2 font-mono text-[10px] font-semibold uppercase tracking-[0.1em] text-ink transition hover:border-kai-500/50 disabled:opacity-60"
         >
-          {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3" />}
-          Image
+          {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
+          Save image
         </button>
+        {storyHref && (
+          <Link
+            href={storyHref}
+            className="f0-focus ml-auto inline-flex items-center gap-1 text-[12px] font-semibold text-kai-blue transition hover:opacity-80"
+          >
+            See the story <ChevronRight className="h-3.5 w-3.5" />
+          </Link>
+        )}
+      </div>
+
+      {/* brand footer + the on-card disclaimer */}
+      <div className="relative z-[1] mt-4 flex items-center justify-between gap-3 border-t border-sand pt-3">
+        <span className="font-mono text-[8.5px] uppercase tracking-[0.16em] text-soft/60">
+          Cheat Code Club · Kai track record
+        </span>
+        <span className="truncate font-mono text-[8.5px] uppercase tracking-[0.1em] text-soft/60">
+          {DISCLAIMER}
+        </span>
       </div>
     </div>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   RESULT SHARE MODAL — the overlay History opens on a winner/loser poster.
+   Paper-toned scrim (mode-correct), spring-in card, Esc / backdrop close.
+   ══════════════════════════════════════════════════════════════════════════ */
+export function ResultShareModal({
+  o,
+  won,
+  storyHref,
+  onClose,
+}: {
+  o: AlertOutcome;
+  won: boolean;
+  storyHref?: string | null;
+  onClose: () => void;
+}) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label={`$${o.ticker} result card`}
+      className="fixed inset-0 z-[80] flex items-center justify-center p-4"
+    >
+      <button
+        type="button"
+        aria-label="Close the result card"
+        onClick={onClose}
+        className="absolute inset-0 backdrop-blur-sm"
+        style={{ background: "color-mix(in srgb, var(--paper) 78%, transparent)" }}
+      />
+      <m.div
+        initial={{ opacity: 0, y: 14, scale: 0.96 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ type: "spring", stiffness: 320, damping: 28 }}
+        className="relative w-full max-w-md"
+      >
+        <ShareOutcomeCard o={o} won={won} storyHref={storyHref} onClose={onClose} />
+      </m.div>
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   OUTCOME POSTER — the History feed's mini result poster. Logo, gradient
+   ticker, glowing result % (static glow — a scrolling grid of count-ups
+   would be noise), one Kai closing line, mono date. Clicking opens the
+   full shareable card above.
+   ══════════════════════════════════════════════════════════════════════════ */
+export function OutcomePoster({
+  o,
+  won,
+  onOpen,
+}: {
+  o: AlertOutcome;
+  won: boolean;
+  onOpen: () => void;
+}) {
+  const accent = accentFor(o);
+  const hue = tickerAccent(o.ticker);
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      aria-label={`Open the $${o.ticker} ${won ? "win" : "loss"} result card`}
+      className="f0-focus f0-press relative block w-full overflow-hidden rounded-[16px] border border-sand bg-card p-3.5 text-left transition hover:border-kai-500/40"
+      style={{
+        background: `radial-gradient(110% 90% at 100% 0%, color-mix(in srgb, ${accent} 9%, transparent), transparent 55%), radial-gradient(110% 90% at 0% 100%, color-mix(in srgb, ${hue} 6%, transparent), transparent 55%), var(--card)`,
+      }}
+    >
+      <div className="flex items-center gap-2.5">
+        <CompanyLogo symbol={o.ticker} name={o.ticker} size={30} rounded="rounded-[9px]" />
+        <div className="min-w-0 flex-1">
+          <span
+            className="font-display text-[17px] font-black leading-none tracking-[-0.03em]"
+            style={{
+              background: `linear-gradient(180deg, var(--ink) 0%, ${accent} 150%)`,
+              WebkitBackgroundClip: "text",
+              backgroundClip: "text",
+              color: "transparent",
+            }}
+          >
+            ${o.ticker}
+          </span>
+          <p className="mt-1 truncate font-mono text-[8.5px] uppercase tracking-[0.14em] text-soft/60">
+            {new Date(o.issued_at).toLocaleDateString(undefined, {
+              month: "short",
+              day: "numeric",
+            })}
+            {o.setup_label ? ` · ${o.setup_label}` : ""}
+          </p>
+        </div>
+        <span
+          className="shrink-0 font-mono text-[24px] font-bold tabular-nums leading-none"
+          style={{
+            color: accent,
+            letterSpacing: "-0.03em",
+            textShadow: `0 0 16px color-mix(in srgb, ${accent} 50%, transparent)`,
+          }}
+        >
+          {pctStr(o.peakPct)}
+        </span>
+      </div>
+      <KaiVoice size="sm" className="mt-2.5">
+        {kaiOutcomeLine(won)}
+      </KaiVoice>
+    </button>
   );
 }
 

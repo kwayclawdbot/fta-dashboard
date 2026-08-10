@@ -2306,3 +2306,19 @@ body {
 :root[data-theme="dark"] [data-mode="club"] .entry-choice {
   border-width: 1px;
 }
+
+/* ── KAI ALERT POSTERS (alerts redesign 2026-08-10) ─────────────────────────
+   Heat by glow: a LIVE poster carries a soft accent radial behind it that
+   breathes on a slow 3s cycle. The keyframe only exists under no-preference;
+   with reduced motion the blob keeps its static inline opacity. The chart
+   line's draw-in rides the existing .club-spark-line vocabulary. */
+.poster-glow {
+  opacity: 0.16;
+}
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes poster-breathe {
+    0%, 100% { opacity: 0.10; }
+    50% { opacity: 0.26; }
+  }
+  .poster-breathe { animation: poster-breathe 3s ease-in-out infinite; }
+}

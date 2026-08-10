@@ -3,72 +3,52 @@
 import { useEffect, useId, useState } from "react";
 
 /* ══════════════════════════════════════════════════════════════════════════
-   ALERT LEVEL CHART — the marked-up "plan on the chart" object, shared by the
-   overview's SetupGraphCard (compact) and the /alerts/s/[id] hero (big).
+   ALERT LEVEL CHART — rebuilt 2026-08-10 as the POSTER chart: the chart IS
+   the card. A full-bleed, edge-to-edge price line drawn as the card's own
+   background — neon stroke with a soft blur-glow under it and a gradient
+   wash below — so the poster's content (ticker, the giant %, Kai's line,
+   the plan rail) floats ON the price action instead of framing a
+   chart-in-a-box. Prior art: cheatcode-os ShareCard / KaiWinDetailPage,
+   adapted onto club tokens + the per-ticker accent.
 
-   VISUAL LANGUAGE (owner directive, 2026-08-10): the chart reads like the
-   levels-marked chart members know from the SMS alerts — the price action
-   with the plan drawn ON it: CANDLESTICK bars on the intraday tf feed
-   (/api/market/bars?tf=15m|1h carries real OHLC — the ClubStockHead candle
-   renderer, copied not reinvented), clearly labelled ENTRY / STOP / TARGET
-   horizontal level lines, a shaded RISK zone between entry and stop (price-
-   down tint) and a shaded REWARD zone between entry and target (price-up
-   tint). The SMS pipeline itself ships those levels as text lines
-   ("Entry: $X · Target: $Y · Stop: $Z"); this is that plan, drawn.
+   Two variants:
+     • "bg"   — the poster card's ground. Absolutely fills its parent,
+                pointer-transparent, line squeezed to the lower band so the
+                floating content stays clear. No bars → renders NOTHING
+                (an absent series is an absent object, never a fake curve).
+     • "hero" — the story page's ~40vh hero. Same full-bleed line, plus the
+                plan's labelled glowing ENTRY / STOP / TARGET horizontals
+                drawn ON the chart. No bars → a stated mono line.
 
-   HONESTY LAW (inherited from the hub): every line is a STORED number — a
-   missing leg is a missing line and a missing zone, never an invented one.
-   Real bars only: no bars → a stated mono line, never a fake curve. A
-   closes-only series (the daily 1M window) draws the honest line, not
-   pretend candles.
+   HONESTY LAW (inherited): the series is the real 1-month daily closes off
+   /api/market/bars; every level line is a stored number — a missing leg is
+   a missing line. Draw-in animation rides .club-spark-line (globals.css),
+   which is already gated on prefers-reduced-motion.
    ══════════════════════════════════════════════════════════════════════════ */
 
-/** One shape covers both feeds — o/h/l absent means "closes-only, draw the line". */
-interface OhlcBar {
+interface CloseBar {
   t: number;
-  o?: number;
-  h?: number;
-  l?: number;
   c: number;
-  v?: number;
 }
 
-/** 15m / 1h ride the intraday OHLC path (candles); "1m" is the daily-close month. */
-export type AlertChartTf = "15m" | "1h" | "1m";
+/* On-demand closes, deduplicated through a module promise cache so the same
+   symbol never refetches across posters or revisits. */
+const closeCache = new Map<string, Promise<CloseBar[]>>();
 
-/** Most-recent bar counts per tf — keeps candles readable at card width. */
-const TF_SLICE: Record<AlertChartTf, number> = { "15m": 52, "1h": 70, "1m": 0 };
-
-export const ALERT_CHART_TFS: { key: AlertChartTf; label: string }[] = [
-  { key: "15m", label: "15M" },
-  { key: "1h", label: "1H" },
-  { key: "1m", label: "1M" },
-];
-
-/* On-demand bars, deduplicated through a module promise cache so the same
-   symbol+tf never refetches across cards or revisits (SetupGraphCard's
-   monthBarCache pattern, generalized). */
-const barCache = new Map<string, Promise<OhlcBar[]>>();
-
-function loadBars(symbol: string, tf: AlertChartTf): Promise<OhlcBar[]> {
-  const key = `${symbol.toUpperCase()}:${tf}`;
-  let p = barCache.get(key);
+function loadCloses(symbol: string): Promise<CloseBar[]> {
+  const key = symbol.toUpperCase();
+  let p = closeCache.get(key);
   if (!p) {
-    const url =
-      tf === "1m"
-        ? `/api/market/bars?symbol=${encodeURIComponent(symbol)}&range=1m`
-        : `/api/market/bars?symbol=${encodeURIComponent(symbol)}&tf=${tf}`;
-    p = fetch(url)
+    p = fetch(`/api/market/bars?symbol=${encodeURIComponent(symbol)}&range=1m`)
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
-        const bars = ((d?.bars as OhlcBar[] | undefined) ?? []).filter(
+        const bars = ((d?.bars as { t: number; c: number }[] | undefined) ?? []).filter(
           (b) => typeof b?.c === "number" && Number.isFinite(b.c)
         );
-        const cap = TF_SLICE[tf];
-        return cap > 0 && bars.length > cap ? bars.slice(-cap) : bars;
+        return bars.map((b) => ({ t: b.t, c: b.c }));
       })
-      .catch(() => [] as OhlcBar[]);
-    barCache.set(key, p);
+      .catch(() => [] as CloseBar[]);
+    closeCache.set(key, p);
   }
   return p;
 }
@@ -77,280 +57,201 @@ function money(n: number): string {
   return n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-function fmtBound(v: number): string {
-  return v >= 1000 ? v.toFixed(0) : v.toFixed(2);
-}
-
 export default function AlertLevelChart({
   symbol,
-  entry,
-  stop,
-  target,
-  tf = "1h",
-  size = "compact",
+  entry = null,
+  stop = null,
+  target = null,
+  accent,
+  variant = "bg",
+  className = "",
 }: {
   symbol: string;
-  entry: number | null;
-  stop: number | null;
-  target: number | null;
-  /** Chart window: 15m / 1h intraday candles, "1m" daily-close line. */
-  tf?: AlertChartTf;
-  /** compact = the overview card's 120px plot · hero = the detail page's 200px. */
-  size?: "compact" | "hero";
+  entry?: number | null;
+  stop?: number | null;
+  target?: number | null;
+  /** CSS colour for the neon line + wash (per-ticker hue). */
+  accent: string;
+  /** "bg" = poster ground · "hero" = the story page's big chart w/ levels. */
+  variant?: "bg" | "hero";
+  className?: string;
 }) {
-  const gid = `alc-${useId().replace(/:/g, "")}`;
-  // Bars kept PER symbol+tf so switching windows resets to the loading state
-  // by derivation (no synchronous setState inside the effect).
-  // absent key = still loading; [] = the feed had nothing for this window.
-  const [loaded, setLoaded] = useState<Record<string, OhlcBar[]>>({});
-  const barKey = `${symbol.toUpperCase()}:${tf}`;
-  const bars: OhlcBar[] | null = loaded[barKey] ?? null;
+  const gid = `alp-${useId().replace(/:/g, "")}`;
+  const [bars, setBars] = useState<CloseBar[] | null>(null);
 
   useEffect(() => {
     let live = true;
-    const key = `${symbol.toUpperCase()}:${tf}`;
-    loadBars(symbol, tf).then((b) => {
-      if (!live) return;
-      setLoaded((prev) => (prev[key] ? prev : { ...prev, [key]: b }));
+    loadCloses(symbol).then((b) => {
+      if (live) setBars(b);
     });
     return () => {
       live = false;
     };
-  }, [symbol, tf]);
+  }, [symbol]);
 
-  const hero = size === "hero";
-  const H = hero ? 200 : 120;
-  const plotClass = hero ? "h-[200px]" : "h-[120px]";
+  const hero = variant === "hero";
 
   if (bars === null) {
-    return (
-      <div className={`${plotClass} rounded-[12px] bg-sand/60 motion-safe:animate-pulse`}>
+    // Loading — the hero shimmers; a poster ground simply hasn't appeared yet.
+    return hero ? (
+      <div className={`absolute inset-0 bg-sand/40 motion-safe:animate-pulse ${className}`}>
         <span className="sr-only">Loading the price series</span>
       </div>
-    );
+    ) : null;
   }
   if (bars.length < 2) {
-    return (
-      <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-soft">
-        No price series for this window
-      </p>
-    );
+    // The feed had nothing — an absent series is an absent object.
+    return hero ? (
+      <div className={`absolute inset-0 grid place-items-center ${className}`}>
+        <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-soft">
+          No price series for this window
+        </p>
+      </div>
+    ) : null;
   }
 
-  const W = hero ? 520 : 332;
-  const padY = 8;
-  // Candles only when the series genuinely carries OHLC (the intraday feed).
-  const candle =
-    bars.filter((b) => b.o != null && b.h != null && b.l != null).length >= bars.length * 0.9;
+  const W = 320;
+  const H = 160;
+  // The line lives in the lower band so floating content stays readable.
+  const padTop = hero ? H * 0.2 : H * 0.38;
+  const padBottom = hero ? H * 0.1 : H * 0.06;
 
-  const lows = bars.map((b) => (candle ? (b.l as number) : b.c));
-  const highs = bars.map((b) => (candle ? (b.h as number) : b.c));
-  // y-domain includes the stored levels so every drawn line and zone sits inside.
-  let lo = Math.min(...lows);
-  let hi = Math.max(...highs);
-  for (const v of [entry, stop, target]) {
-    if (v == null) continue;
-    if (v < lo) lo = v;
-    if (v > hi) hi = v;
+  let lo = Math.min(...bars.map((b) => b.c));
+  let hi = Math.max(...bars.map((b) => b.c));
+  // The hero draws the stored levels ON the chart, so its domain includes them.
+  if (hero) {
+    for (const v of [entry, stop, target]) {
+      if (v == null) continue;
+      if (v < lo) lo = v;
+      if (v > hi) hi = v;
+    }
   }
   const span = hi - lo || 1;
-  const y = (v: number) => padY + (H - padY * 2) * (1 - (v - lo) / span);
+  const y = (v: number) => padTop + (H - padTop - padBottom) * (1 - (v - lo) / span);
   const n = bars.length;
-  const step = W / n;
+  const step = W / (n - 1);
 
-  const closes = bars.map((b) => b.c);
-  const up = closes[closes.length - 1] >= closes[0];
-  const stroke = up ? "var(--color-price-up)" : "var(--color-price-down)";
+  const linePts = bars.map((b, i) => `${(i * step).toFixed(1)},${y(b.c).toFixed(1)}`).join(" ");
+  const area = `0,${H} ${linePts} ${W},${H}`;
 
-  const linePts = bars
-    .map((b, i) => `${(i * step + step / 2).toFixed(1)},${y(b.c).toFixed(1)}`)
-    .join(" ");
-  const area = `${(step / 2).toFixed(1)},${H} ${linePts} ${(W - step / 2).toFixed(1)},${H}`;
-
-  // The stored levels this alert genuinely carries — nothing else is drawn.
-  const levels: { v: number; label: string; color: string; text: string }[] = [];
-  if (entry != null)
-    levels.push({ v: entry, label: "ENTRY", color: "var(--ink)", text: "text-ink" });
-  if (stop != null)
-    levels.push({
-      v: stop,
-      label: "STOP",
-      color: "var(--color-price-down)",
-      text: "text-price-down",
-    });
-  if (target != null)
-    levels.push({
-      v: target,
-      label: "TARGET",
-      color: "var(--color-price-up)",
-      text: "text-price-up",
-    });
-
-  // The shaded plan zones — only when BOTH legs of a zone are stored.
-  const zones: { from: number; to: number; fill: string }[] = [];
-  if (entry != null && stop != null && stop !== entry)
-    zones.push({ from: entry, to: stop, fill: "var(--color-price-down)" });
-  if (entry != null && target != null && target !== entry)
-    zones.push({ from: entry, to: target, fill: "var(--color-price-up)" });
-
-  // The right-hand rail — four values off the drawn range, as the mockup rails.
-  const axis = [hi, lo + (span * 2) / 3, lo + span / 3, lo];
-
-  // Session stamps read off the bars drawn: times inside a session, dates beyond.
-  const stamp = (t: number) =>
-    tf === "15m"
-      ? new Date(t).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })
-      : new Date(t).toLocaleDateString([], { month: "short", day: "numeric" });
-
-  const bodyW = Math.max(1.4, step * 0.55);
-  const wickW = Math.max(0.7, step * 0.16);
+  // The stored levels this alert genuinely carries — hero only, nothing else.
+  const levels: { v: number; label: string; color: string; cls: string }[] = [];
+  if (hero) {
+    if (entry != null)
+      levels.push({ v: entry, label: "ENTRY", color: "var(--ink)", cls: "text-ink" });
+    if (stop != null)
+      levels.push({
+        v: stop,
+        label: "STOP",
+        color: "var(--color-price-down)",
+        cls: "text-price-down",
+      });
+    if (target != null)
+      levels.push({
+        v: target,
+        label: "TARGET",
+        color: "var(--color-price-up)",
+        cls: "text-price-up",
+      });
+  }
 
   const levelWords = levels.map((l) => `${l.label.toLowerCase()} ${money(l.v)}`).join(", ");
 
   return (
-    <>
-      <div className="flex items-stretch gap-2">
-        <div className="relative min-w-0 flex-1">
-          <svg
-            viewBox={`0 0 ${W} ${H}`}
-            preserveAspectRatio="none"
-            className={`block w-full ${plotClass}`}
-            role="img"
-            aria-label={`${symbol.toUpperCase()} price ${candle ? "candles" : "trend"}${
-              levelWords ? ` with the plan's ${levelWords} marked` : ""
-            }`}
+    <div aria-hidden={!hero} className={`pointer-events-none absolute inset-0 ${className}`}>
+      <svg
+        viewBox={`0 0 ${W} ${H}`}
+        preserveAspectRatio="none"
+        className="block h-full w-full"
+        role={hero ? "img" : undefined}
+        aria-label={
+          hero
+            ? `${symbol.toUpperCase()} one-month price trend${
+                levelWords ? ` with the plan's ${levelWords} marked` : ""
+              }`
+            : undefined
+        }
+      >
+        <defs>
+          <linearGradient id={`${gid}-wash`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={accent} stopOpacity={hero ? 0.24 : 0.16} />
+            <stop offset="100%" stopColor={accent} stopOpacity="0" />
+          </linearGradient>
+          <filter id={`${gid}-blur`} x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur stdDeviation="3.5" />
+          </filter>
+        </defs>
+
+        {/* level lines — glowing horizontals, drawn ON the chart (hero) */}
+        {levels.map((l) => (
+          <g key={l.label}>
+            <line
+              x1="0"
+              x2={W}
+              y1={y(l.v)}
+              y2={y(l.v)}
+              stroke={l.color}
+              strokeOpacity="0.5"
+              strokeWidth="3"
+              filter={`url(#${gid}-blur)`}
+              vectorEffect="non-scaling-stroke"
+            />
+            <line
+              x1="0"
+              x2={W}
+              y1={y(l.v)}
+              y2={y(l.v)}
+              stroke={l.color}
+              strokeOpacity={l.label === "ENTRY" ? 0.55 : 0.8}
+              strokeWidth="1.2"
+              strokeDasharray="5 4"
+              vectorEffect="non-scaling-stroke"
+            />
+          </g>
+        ))}
+
+        {/* gradient wash under the closes */}
+        <polygon points={area} fill={`url(#${gid}-wash)`} />
+
+        {/* the neon line — soft blur-glow pass under the crisp stroke */}
+        <polyline
+          points={linePts}
+          fill="none"
+          stroke={accent}
+          strokeOpacity="0.45"
+          strokeWidth="6"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          filter={`url(#${gid}-blur)`}
+          vectorEffect="non-scaling-stroke"
+        />
+        <polyline
+          points={linePts}
+          fill="none"
+          stroke={accent}
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          pathLength={1}
+          className="club-spark-line"
+          vectorEffect="non-scaling-stroke"
+        />
+      </svg>
+
+      {/* level tags — HTML overlays so the text never distorts (hero) */}
+      {levels.map((l) => {
+        const topPct = (y(l.v) / H) * 100;
+        return (
+          <span
+            key={l.label}
+            aria-hidden
+            className={`absolute left-3 -translate-y-1/2 rounded-[5px] bg-card/85 px-1.5 py-px font-mono text-[9.5px] font-semibold tabular-nums leading-[1.3] ${l.cls}`}
+            style={{ top: `${topPct}%` }}
           >
-            <defs>
-              <linearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={stroke} stopOpacity="0.14" />
-                <stop offset="100%" stopColor={stroke} stopOpacity="0.02" />
-              </linearGradient>
-            </defs>
-
-            {/* dotted grid — the mockup's faint horizontals */}
-            {[0.25, 0.5, 0.75].map((f) => (
-              <line
-                key={f}
-                x1="0"
-                x2={W}
-                y1={padY + (H - padY * 2) * f}
-                y2={padY + (H - padY * 2) * f}
-                stroke="var(--color-sand)"
-                strokeWidth="1"
-                strokeDasharray="1 5"
-              />
-            ))}
-
-            {/* the plan's shaded risk / reward zones — under the price action */}
-            {zones.map((z, i) => {
-              const top = Math.min(y(z.from), y(z.to));
-              const bot = Math.max(y(z.from), y(z.to));
-              return (
-                <rect
-                  key={i}
-                  x="0"
-                  y={top}
-                  width={W}
-                  height={Math.max(1, bot - top)}
-                  fill={z.fill}
-                  opacity="0.08"
-                />
-              );
-            })}
-
-            {/* the wash under the closes */}
-            <polygon points={area} fill={`url(#${gid})`} />
-
-            {candle ? (
-              bars.map((b, i) => {
-                const cUp = b.c >= (b.o as number);
-                const col = cUp ? "var(--color-price-up)" : "var(--color-price-down)";
-                const cx = i * step + step / 2;
-                const top = y(Math.max(b.o as number, b.c));
-                const bot = y(Math.min(b.o as number, b.c));
-                return (
-                  <g key={b.t}>
-                    <line
-                      x1={cx}
-                      x2={cx}
-                      y1={y(b.h as number)}
-                      y2={y(b.l as number)}
-                      stroke={col}
-                      strokeWidth={wickW}
-                    />
-                    <rect
-                      x={cx - bodyW / 2}
-                      y={top}
-                      width={bodyW}
-                      height={Math.max(1, bot - top)}
-                      fill={col}
-                      rx={bodyW * 0.2}
-                    />
-                  </g>
-                );
-              })
-            ) : (
-              <polyline
-                points={linePts}
-                fill="none"
-                stroke={stroke}
-                strokeWidth="2.2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                vectorEffect="non-scaling-stroke"
-              />
-            )}
-
-            {/* stored level lines — dashed, one per leg the alert carries */}
-            {levels.map((l) => (
-              <line
-                key={l.label}
-                x1="0"
-                x2={W}
-                y1={y(l.v)}
-                y2={y(l.v)}
-                stroke={l.color}
-                strokeOpacity={l.label === "ENTRY" ? 0.55 : 0.75}
-                strokeWidth="1.4"
-                strokeDasharray="5 4"
-                vectorEffect="non-scaling-stroke"
-              />
-            ))}
-          </svg>
-
-          {/* level tags — HTML overlays so the text never distorts */}
-          {levels.map((l) => {
-            const topPct = (y(l.v) / H) * 100;
-            return (
-              <span
-                key={l.label}
-                aria-hidden
-                className={`absolute left-1 -translate-y-1/2 rounded-[5px] bg-card/90 px-1 py-px font-mono font-semibold tabular-nums leading-[1.2] ${
-                  hero ? "text-[9.5px]" : "text-[8.5px]"
-                } ${l.text}`}
-                style={{ top: `${topPct}%` }}
-              >
-                {l.label} {money(l.v)}
-              </span>
-            );
-          })}
-        </div>
-
-        {/* the price rail on the right, as drawn */}
-        <div
-          className="flex shrink-0 flex-col justify-between py-1 text-right font-mono text-[9.5px] tabular-nums text-soft"
-          aria-hidden
-        >
-          {axis.map((v, i) => (
-            <span key={i}>{fmtBound(v)}</span>
-          ))}
-        </div>
-      </div>
-
-      <div className="mt-1.5 flex justify-between pr-9 font-mono text-[9.5px] tabular-nums text-soft">
-        <span>{stamp(bars[0].t)}</span>
-        <span>{stamp(bars[n - 1].t)}</span>
-      </div>
-    </>
+            {l.label} {money(l.v)}
+          </span>
+        );
+      })}
+    </div>
   );
 }

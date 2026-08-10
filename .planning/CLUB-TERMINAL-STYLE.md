@@ -88,7 +88,7 @@ Future passes update the Status column in place.
 | /discover | 1 | Ratified (concurrent screener/discover pass in flight) |
 | /community (+ /compose, /changed-my-mind) | 1 | Ratified (ClubCommunityScreen, board kit) |
 | /kai | 1 | Ratified |
-| /alerts (+ /alerts/e/[id], /alerts/s/[id]) | 1 | Ratified · IA rebuilt 2026-08-10 (see "Alerts UX audit") — 3 tabs NOW/HISTORY/RECORD, one card vocabulary, legacy hash remap |
+| /alerts (+ /alerts/e/[id], /alerts/s/[id]) | 1 | Ratified · IA rebuilt 2026-08-10 (see "Alerts UX audit") · VISUAL REDESIGN 2026-08-10 (see "Alerts poster redesign") — 2 tabs NOW/HISTORY, poster language (chart-is-the-card, heat-by-glow, plan rails, Kai-voice state lines), story-thread /alerts/s/, shareable result-card modal; /alerts/e/ untouched |
 | /research/[ticker] | 1 | Ratified (ClubRead / ClubStockHead / KaiReportPanel) |
 | /watchlist (+ /watchlist/community) | 1 | Ratified |
 | /u/[username] | 2 | DONE 2026-08-09 — club server-door branch, terminal profile; family render byte-identical |
@@ -204,3 +204,82 @@ and the duplicate History band deleted; NavCard removed from board.tsx.
 All plumbing preserved: rule toggle/digest/delete writes, alert_prefs
 digest + hub_seen_at, setup follows, strategy tuner, free LockedState +
 adult gate, /e/ and /s/ detail pages, verbatim compliance lines.
+
+## Alerts poster redesign 2026-08-10 (owner-approved)
+
+Prior art studied first: cheatcode-os `ShareCard.tsx` + `KaiWinDetailPage.tsx`
+(the original Kai dashboard's viral result card — radial glow, giant gradient
+ticker, glowing counted-up %, entry→peak rail, mono brand footer). That exact
+visual language adapted onto club tokens across the whole alerts experience.
+
+THE LANGUAGE (new kit, `src/components/alerts/poster.tsx` + rebuilt
+`AlertLevelChart` / `SetupGraphCard` / `ShareOutcomeCard`):
+- **The chart IS the card** — AlertLevelChart rebuilt as the full-bleed
+  edge-to-edge 1-month close line drawn as the card's own ground (neon stroke
+  + blur-glow pass + gradient wash, draw-in via the existing
+  `.club-spark-line` motion vocabulary); content floats ON it. Variants:
+  `bg` (poster ground, renders NOTHING when the feed has no bars) and `hero`
+  (the story page's ~40vh chart with labelled glowing ENTRY/STOP/TARGET
+  horizontals ON the chart). No chart-in-a-box remains on these surfaces.
+- **Scale contrast** — ONE giant glowing mono % per poster (`GlowPct`,
+  direction-coloured off the price ramp, rAF count-up, reduced-motion renders
+  the final figure); everything else small.
+- **Heat by glow** — state chips, lifecycle bars, distance meters and the
+  "NEAR TRIGGER" vocabulary removed from alerts consumption surfaces. State
+  is ONE human Kai line (`kaiSetupLine`: "Kai just flagged this." / "Still
+  setting up." / "This one hit its target." / "This one didn't work."); a
+  live card carries a per-ticker radial glow breathing on a 3s cycle
+  (`.poster-breathe`, motion-gated in globals.css); quiet cards flat/dim.
+- **The plan as a rail** — `PlanRail`: Entry → Target gradient line with
+  labelled mono prices, stop marked beneath; StatGrid removed from these
+  surfaces (board.tsx itself untouched — watchlist/e-detail still use it).
+- **Per-ticker hue** — `tickerAccent()` derives a deterministic hue from the
+  ticker string (data-derived accent, mixed over token grounds at low
+  opacity; not a surface colour).
+- **Kai's voice as typography** — `KaiVoice`, the quoted violet line, large
+  and first-class on every card.
+
+PAGE 1 — NOW (AlertsClient): violet KAI mark + ONE status line in Kai's voice
+("Three plays live. Market open.") derived from real lifecycle counts +
+marketStatus; status-band card killed; watermark N-new as a small chip.
+TODAY'S THREE (owner ruling) as the hero poster block (larger, glowing, TODAY
+mono tag; today = created or state-entered today), THE WEEK as a quieter
+vertical stack. Daily Brief as a typographic letter (violet paragraphs behind
+a violet rule, ticker index chips at the foot deep-linking to each story);
+honest empty state (FoundingState + sample pick + market events) kept. Fresh
+result (win OR loss, ~48h, genuinely graded) as an OutcomePoster opening the
+share modal. Quiet footer link → History. The entire watches admin
+(MyWatchesSection — NL creation, plays, delivery prefs, tuner, every write)
+behind ONE gear affordance at the very bottom; WatchManageCard swapped its
+chip+bar for the human watchStateLine + recorded metric.
+
+PAGE 2 — /alerts/s/[id] (SetupDetailClient): full-bleed ~40vh hero chart with
+levels ON it, ticker as gradient display type + live price + glowing
+since-flagged % overlaid; Follow + Share pills top-right ONLY. Kai's thesis
+as the violet centerpiece. Plan rail. StatGrid / flagged-at / conditions /
+related-events / lifecycle-metadata blocks removed. THE STORY AS A THREAD:
+SMS-style bubbles built ONLY from recorded data (created_at → the member's
+real setup_update events → state_entered_at resolution, deduped), and the
+real KaiChatShared continuing the SAME thread via a composer bubble at its
+foot. Verbatim disclaimer footer kept.
+
+PAGE 3 — HISTORY (Record merged; tabs now NOW · HISTORY): honest record band
+on top (big mono W/L both sides always, avg peak toned by sign, month vs
+all-time, grading copy verbatim), sticky All/Wins/Losses/Briefs filter,
+editorial time headers ("This week", month names), resolved alerts as mini
+outcome posters interleaved with slim dim hairline rows for briefs/notices
+(N-new marks kept). CLICKING a winner/loser opens the FULL shareable result
+card (owner ruling) — ResultShareModal presenting the rebuilt
+ShareOutcomeCard big (radial glow, gradient ticker, glowing %, entry→peak
+rail, held/date, ClubMark+KAI brand footer, on-card disclaimer) with Share +
+Save image (existing native-canvas 1080×1080 PNG export unchanged) and a
+"See the story" deep link to /alerts/s/[id]. Observational
+what-happened-after split kept as a quiet section; compliance paragraphs
+verbatim. Legacy hashes: #track/#record/#history → HISTORY; #watch/#kai-nl
+unfold the gear'd admin.
+
+All plumbing preserved: rule toggle/digest/delete, alert_prefs writes +
+hub_seen_at watermark, setup follows (WatchSetupButton), strategy tuner,
+free LockedState + adult gate (server pages untouched), sample-alert honesty,
+real-data-only law throughout. `npx tsc --noEmit` clean; eslint on touched
+files: no errors.

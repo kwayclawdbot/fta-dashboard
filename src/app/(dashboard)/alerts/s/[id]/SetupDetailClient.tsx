@@ -1,69 +1,56 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, ChevronRight, Eye, LineChart, Sparkles } from "lucide-react";
+import { ArrowLeft, Check, Share2, Sparkles } from "lucide-react";
 import CompanyLogo from "@/components/fic/CompanyLogo";
 import KaiChatShared from "@/components/kai/KaiChatShared";
-import AlertLevelChart, {
-  ALERT_CHART_TFS,
-  type AlertChartTf,
-} from "@/components/alerts/AlertLevelChart";
+import AlertLevelChart from "@/components/alerts/AlertLevelChart";
 import WatchSetupButton from "@/components/alerts/WatchSetupButton";
 import {
-  Card,
-  CardLink,
-  StatePill,
-  StatGrid,
-  MetricChip,
-  CondRow,
-  LifecycleBar,
-  Eyebrow as BoardEyebrow,
-} from "@/components/alerts/board";
+  GlowPct,
+  KaiVoice,
+  PlanRail,
+  kaiSetupLine,
+  money,
+  tickerAccent,
+} from "@/components/alerts/poster";
 import { SETUP_STATE_META, setupStateLine, readSetupLevels } from "@/lib/alerts/watch-ui";
 import type { SetupState } from "@/lib/alerts/setup-lifecycle";
 import type { AlertEvent, AlertSetup, TradeAlert } from "@/lib/alerts/types";
-import { formatMove, moveToneClass } from "@/lib/format-move";
 
 /**
- * SETUP DETAIL — the client surface for /alerts/s/[id].
+ * SETUP DETAIL — /alerts/s/[id], rebuilt 2026-08-10 as THE STORY (owner-
+ * approved poster language; prior art cheatcode-os KaiWinDetailPage on club
+ * tokens):
  *
- * A ticker-detail-style page for ONE alert_setups lifecycle object: masthead
- * (logo · $TICKER · name · direction · state chip), the big SMS-style
- * marked-up chart (AlertLevelChart hero: candles + labelled ENTRY/STOP/TARGET
- * lines + shaded risk/reward zones), the plan's StatGrid, distance-to-trigger
- * while the setup is live, Kai's stored thesis in the quoted kai-blue voice,
- * the HONEST lifecycle record (current state + entered-at + whatever
- * setup_update steps were really fanned out to this member — never a
- * reconstructed history), the owning briefing narrative when linked, related
- * feed events for the ticker, and an inline Ask-Kai section seeded with this
- * setup's exact context.
+ *   • Full-bleed ~40vh hero — the real 1-month close line drawn edge-to-edge
+ *     with a neon glow, the plan's ENTRY / STOP / TARGET as labelled glowing
+ *     horizontals ON the chart, and the content floating on it: back arrow +
+ *     Follow/Share pills top, logo + gradient $TICKER bottom-left, live
+ *     price + the glowing since-flagged % bottom-right.
+ *   • Kai's thesis as the centerpiece — large quoted violet typography, with
+ *     the ONE human state line beneath (no chips, no lifecycle bars, no
+ *     distance meters, per the heat-by-glow law).
+ *   • The plan as a rail — Entry → Target with the stop marked beneath.
+ *   • THE STORY AS A THREAD — SMS-style beats built ONLY from recorded data
+ *     (issued_at → the setup_update events genuinely fanned out to this
+ *     member → the resolution's state_entered_at), and the inline Kai chat
+ *     continuing the SAME thread with a composer at its foot.
  *
- * COMPLIANCE: the footer disclaimer is rendered VERBATIM from the event
- * detail screen. Kai keeps all its own caps/meters/guardrails — the embed is
- * the real KaiChatShared panel, not a fork.
+ * COMPLIANCE: the footer disclaimer is rendered VERBATIM. Kai keeps all its
+ * own caps/meters/guardrails — the embed is the real KaiChatShared panel.
  */
 
-function money(n: number): string {
-  return n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+function stamp(iso: string): string {
+  const d = new Date(iso);
+  return `${d.toLocaleDateString(undefined, { month: "short", day: "numeric" })} · ${d.toLocaleTimeString(
+    undefined,
+    { hour: "numeric", minute: "2-digit" }
+  )}`;
 }
 
-function timeAgo(iso: string): string {
-  const then = new Date(iso).getTime();
-  const mins = Math.max(0, Math.round((Date.now() - then) / 60000));
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.round(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  const days = Math.round(hrs / 24);
-  return `${days}d ago`;
-}
-
-function stampDate(iso: string): string {
-  return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" });
-}
-
-const DIR_GLYPH: Record<string, string> = { long: "↑", short: "↓", watch: "•" };
+const TERMINAL_STATES: SetupState[] = ["triggered", "invalidated", "expired"];
 
 export default function SetupDetailClient({
   setup,
@@ -71,62 +58,92 @@ export default function SetupDetailClient({
   current,
   companyName,
   thread,
-  related,
 }: {
   setup: AlertSetup;
   broadcast: TradeAlert | null;
   current: number | null;
   companyName: string;
   thread: AlertEvent[];
-  related: AlertEvent[];
+  /** Still fetched by the server page; the story renders only THIS setup's
+   *  own recorded beats (related-events blocks removed by the redesign). */
+  related?: AlertEvent[];
 }) {
-  const [tf, setTf] = useState<AlertChartTf>("1h");
   const [kaiOpen, setKaiOpen] = useState(false);
   const [kaiNonce, setKaiNonce] = useState(0);
+  const [copied, setCopied] = useState(false);
 
   const meta = SETUP_STATE_META[setup.state];
+  const hue = tickerAccent(setup.ticker);
   const L = readSetupLevels(setup.levels);
   const entry = setup.entry ?? broadcast?.entry ?? null;
   const stop = L.stop ?? L.support;
   const target = broadcast?.targets?.[0]?.price ?? L.resistance;
   const px = current ?? setup.snapshot_price;
 
-  const risk = entry != null && stop != null ? Math.abs(entry - stop) : null;
-  const reward = entry != null && target != null ? Math.abs(target - entry) : null;
-  const rr = risk != null && reward != null && risk > 0 ? reward / risk : null;
-
   const snap = setup.snapshot_price;
   const perfPct =
     snap != null && current != null && snap > 0 ? ((current - snap) / snap) * 100 : null;
 
-  // The setup is a LIVE, still-developing thing in these states — that is when
-  // distance-to-trigger is a reading, not archaeology.
-  const isLive = setup.state === "waiting" || setup.state === "confirmed";
+  // The thesis centerpiece — the stored words only, never invented.
+  const thesis = setup.thesis || broadcast?.narrative || setupStateLine(setup.state, setup.ticker);
 
-  // Machine-recorded conditions ("2 of 3") — rendered ONLY when present.
-  const conditions = Array.isArray(setup.detail?.conditions)
-    ? (setup.detail!.conditions as { label: string; met: boolean }[])
-    : [];
-  const metCount = conditions.filter((c) => c.met).length;
+  /* ── THE STORY'S BEATS — recorded moments only ─────────────────────────
+     issued (created_at) → every setup_update event genuinely fanned out to
+     this member (ascending) → the resolution (state_entered_at), skipped
+     when the thread already carries that terminal step. */
+  const beats = useMemo(() => {
+    const list: { id: string; at: string; text: string }[] = [
+      {
+        id: "issued",
+        at: setup.created_at,
+        text: broadcast?.setup_label
+          ? `${broadcast.setup_label} — Kai flagged $${setup.ticker}.`
+          : `Kai flagged $${setup.ticker}.`,
+      },
+    ];
+    const asc = [...thread].sort((a, b) => +new Date(a.fired_at) - +new Date(b.fired_at));
+    for (const e of asc) {
+      const st = (e.payload?.state as SetupState) || setup.state;
+      list.push({
+        id: e.id,
+        at: e.fired_at,
+        text: e.payload?.message || setupStateLine(st, setup.ticker),
+      });
+    }
+    const terminal = TERMINAL_STATES.includes(setup.state);
+    const threadHasTerminal = asc.some((e) => e.payload?.state === setup.state);
+    if (terminal && !threadHasTerminal) {
+      list.push({
+        id: "resolved",
+        at: setup.state_entered_at,
+        text: setupStateLine(setup.state, setup.ticker),
+      });
+    }
+    return list;
+  }, [setup, broadcast, thread]);
 
-  const stats: { k: string; v: string; tone?: "up" | "down" }[] = [
-    ...(entry != null ? [{ k: "Entry", v: money(entry) }] : []),
-    ...(stop != null ? [{ k: "Stop", v: money(stop), tone: "down" as const }] : []),
-    ...(target != null ? [{ k: "Target", v: money(target), tone: "up" as const }] : []),
-    ...(rr != null ? [{ k: "R:R", v: `${rr.toFixed(1)}:1` }] : []),
-    ...(snap != null ? [{ k: "Flagged at", v: money(snap) }] : []),
-    ...(perfPct != null
-      ? [
-          {
-            k: "Since",
-            v: `${perfPct >= 0 ? "+" : ""}${perfPct.toFixed(1)}%`,
-            ...(Math.abs(perfPct) >= 0.05
-              ? { tone: (perfPct >= 0 ? "up" : "down") as "up" | "down" }
-              : {}),
-          },
-        ]
-      : []),
-  ];
+  // Share — the story's own URL + an honest one-line summary.
+  const share = useCallback(async () => {
+    const url = window.location.href;
+    const text =
+      `Kai's ${setup.direction} setup on $${setup.ticker} — ${meta.label.toLowerCase()}. ` +
+      `Educational analysis, not advice.`;
+    try {
+      if (typeof navigator.share === "function") {
+        await navigator.share({ title: `KAI · $${setup.ticker}`, text, url });
+        return;
+      }
+    } catch {
+      // Dismissed / unsupported → fall through to the clipboard copy.
+    }
+    try {
+      await navigator.clipboard.writeText(`${text} ${url}`);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1600);
+    } catch {
+      // Clipboard blocked — nothing honest left to do silently.
+    }
+  }, [setup, meta.label]);
 
   // The seeded Ask-Kai context — names THIS setup: ticker, state, levels.
   const kaiChip = `${setup.ticker} · ${meta.label} setup`;
@@ -143,375 +160,195 @@ export default function SetupDetailClient({
   }
 
   return (
-    <div className="mx-auto w-full max-w-[68ch] px-4 pb-16 pt-5 sm:px-6">
-      {/* ── MASTHEAD — back · logo · $TICKER · name · direction · state ──── */}
-      <div className="flex items-center gap-3">
-        <Link
-          href="/alerts"
-          aria-label="Back to Kai Watch"
-          className="f0-focus shrink-0 text-soft transition hover:text-ink"
-        >
-          <ArrowLeft className="h-4 w-4" />
-        </Link>
-        <CompanyLogo symbol={setup.ticker} name={companyName} size={40} rounded="rounded-[12px]" />
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-            <h1 className="font-display text-[20px] font-extrabold leading-none tracking-tight text-ink">
-              ${setup.ticker}
-            </h1>
-            <span className="inline-flex items-center gap-1 rounded-full bg-paper px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.1em] text-soft">
-              <span aria-hidden>{DIR_GLYPH[setup.direction] ?? DIR_GLYPH.watch}</span>
-              {setup.direction}
-            </span>
+    <div className="mx-auto w-full max-w-3xl pb-16">
+      {/* ══ HERO — the chart IS the page's opening frame, full-bleed ═══════ */}
+      <div
+        className="relative h-[40vh] max-h-[460px] min-h-[300px] overflow-hidden border-b"
+        style={{ borderColor: `color-mix(in srgb, ${hue} 22%, var(--sand))` }}
+      >
+        {/* heat by glow — breathing while the setup is a live thing */}
+        <span
+          aria-hidden
+          className={`absolute -top-24 right-[-10%] h-72 w-72 rounded-full blur-3xl poster-glow ${
+            meta.live ? "poster-breathe" : ""
+          }`}
+          style={{ background: hue }}
+        />
+
+        <AlertLevelChart
+          variant="hero"
+          symbol={setup.ticker}
+          entry={entry}
+          stop={stop}
+          target={target}
+          accent={hue}
+        />
+
+        {/* top overlay — back · Follow + Share pills (the ONLY actions) */}
+        <div className="absolute inset-x-0 top-0 z-[2] flex items-center gap-2 p-4">
+          <Link
+            href="/alerts"
+            aria-label="Back to Kai Watch"
+            className="f0-focus grid h-8 w-8 shrink-0 place-items-center rounded-full border border-sand bg-card/80 text-soft backdrop-blur-sm transition hover:text-ink"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Link>
+          <div className="ml-auto flex items-center gap-2">
+            <WatchSetupButton
+              setupId={setup.id}
+              initialSubscribed={!!setup.subscribed}
+              size="sm"
+            />
+            <button
+              type="button"
+              onClick={share}
+              className="f0-focus f0-press inline-flex items-center gap-1.5 rounded-full border border-sand bg-card/80 px-3 py-1.5 text-[12px] font-semibold text-ink backdrop-blur-sm transition hover:border-kai-500/50"
+            >
+              {copied ? <Check className="h-3.5 w-3.5 text-kai-600" /> : <Share2 className="h-3.5 w-3.5" />}
+              {copied ? "Copied" : "Share"}
+            </button>
           </div>
-          <p className="mt-1 truncate text-[11.5px] text-soft/85">{companyName}</p>
         </div>
-        <StatePill tone={meta.tone} label={meta.label} live={meta.live} />
+
+        {/* bottom overlay — identity left · live price + glowing move right */}
+        <div className="absolute inset-x-0 bottom-0 z-[2] flex items-end justify-between gap-4 p-4">
+          <div className="flex min-w-0 items-center gap-3">
+            <CompanyLogo
+              symbol={setup.ticker}
+              name={companyName}
+              size={40}
+              rounded="rounded-[12px]"
+            />
+            <div className="min-w-0">
+              <h1
+                className="font-display text-[30px] font-black leading-none tracking-[-0.04em]"
+                style={{
+                  background: `linear-gradient(180deg, var(--ink) 0%, ${hue} 150%)`,
+                  WebkitBackgroundClip: "text",
+                  backgroundClip: "text",
+                  color: "transparent",
+                }}
+              >
+                ${setup.ticker}
+              </h1>
+              <p className="mt-1 truncate text-[11.5px] text-soft/85">{companyName}</p>
+            </div>
+          </div>
+          <div className="shrink-0 text-right">
+            {px != null && (
+              <p className="font-mono text-[13px] font-semibold tabular-nums leading-none text-ink">
+                {money(px)}
+              </p>
+            )}
+            {perfPct != null && (
+              <div className="mt-1.5">
+                <GlowPct value={perfPct} size={30} />
+                <p className="mt-1 font-mono text-[8.5px] uppercase tracking-[0.16em] text-soft/70">
+                  Since flagged
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
-      {/* ── THE SETUP ON THE CHART — the SMS-style marked-up hero ────────── */}
-      <Card className="mt-5">
-        <div className="flex items-baseline justify-between gap-3">
-          <BoardEyebrow accent>The setup on the chart</BoardEyebrow>
-          {px != null && (
-            <span className="shrink-0 font-mono text-[12px] font-semibold tabular-nums text-ink">
-              {money(px)}
-              {perfPct != null && (
-                <span className={` ${moveToneClass(perfPct)}`}> {formatMove(perfPct)}</span>
-              )}
-            </span>
-          )}
-        </div>
-
-        {/* timeframe pills — 15M/1H candles off the tf feed, 1M daily line */}
-        <div className="mt-3 flex gap-1.5" role="group" aria-label="Chart timeframe">
-          {ALERT_CHART_TFS.map((t) => {
-            const on = t.key === tf;
-            return (
-              <button
-                key={t.key}
-                type="button"
-                aria-pressed={on}
-                onClick={() => setTf(t.key)}
-                className={`f0-focus f0-press shrink-0 rounded-[10px] border px-3 py-1.5 font-mono text-[10.5px] font-semibold transition ${
-                  on
-                    ? "border-ink bg-ink text-paper"
-                    : "border-sand bg-card text-soft hover:text-ink"
-                }`}
-              >
-                {t.label}
-              </button>
-            );
-          })}
-        </div>
-
-        <div className="mt-3">
-          <AlertLevelChart
-            symbol={setup.ticker}
-            entry={entry}
-            stop={stop}
-            target={target}
-            tf={tf}
-            size="hero"
-          />
-        </div>
-
-        {stats.length > 0 && <StatGrid className="mt-3" stats={stats} />}
-
-        {risk != null && reward != null && risk > 0 && (
-          <p className="mt-3 text-[13px] font-semibold tracking-[-0.01em] text-ink">
-            Risk <span className="font-mono font-bold tabular-nums text-price-down">${money(risk)}</span>{" "}
-            to make{" "}
-            <span className="font-mono font-bold tabular-nums text-price-up">${money(reward)}</span> a
-            share.
-          </p>
-        )}
-
-        <div className="mt-2.5">
-          <MetricChip>delayed ~15m</MetricChip>
-        </div>
-      </Card>
-
-      {/* ── DISTANCE TO TRIGGER — only while the setup is genuinely live ─── */}
-      {isLive && entry != null && px != null && (
-        <Card className="mt-3">
-          <BoardEyebrow>Distance to trigger</BoardEyebrow>
-          <TriggerDistance entry={entry} stop={stop} current={px} direction={setup.direction} />
-        </Card>
-      )}
-
-      {/* ── KAI'S READ — the stored thesis, quoted; never invented ───────── */}
-      <Card className="mt-3">
-        <div className="flex items-start gap-3">
-          <span className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-[9px] bg-kai-500 text-white">
+      <div className="mx-auto w-full max-w-[68ch] px-4 sm:px-6">
+        {/* ── KAI'S THESIS — the centerpiece, large violet typography ────── */}
+        <div className="mt-7 flex items-start gap-3">
+          <span className="mt-1 grid h-8 w-8 shrink-0 place-items-center rounded-[10px] bg-kai-500 text-white">
             <Sparkles className="h-4 w-4" />
           </span>
           <div className="min-w-0 flex-1">
-            <BoardEyebrow>Kai&apos;s read</BoardEyebrow>
-            <p className="mt-2 text-[14px] leading-relaxed">
-              <span className="text-kai-blue">
-                &ldquo;{setup.thesis || setupStateLine(setup.state, setup.ticker)}&rdquo;
-              </span>
+            <KaiVoice size="xl">{thesis}</KaiVoice>
+            {/* state is ONE human Kai line — never a chip */}
+            <p className="mt-2.5 text-[12.5px] font-semibold text-soft">
+              {kaiSetupLine(setup)}
             </p>
-            {conditions.length > 0 && (
-              <div className="mt-3 flex flex-wrap gap-1.5">
-                {conditions.map((c, i) => (
-                  <span
-                    key={i}
-                    className={`inline-flex items-center gap-1.5 rounded-[9px] border px-2.5 py-1.5 text-[10.5px] font-bold ${
-                      c.met
-                        ? "border-price-up/30 bg-price-up/10 text-price-up"
-                        : "border-sand bg-paper text-soft"
-                    }`}
-                  >
-                    <span aria-hidden>{c.met ? "✓" : "○"}</span>
-                    {c.label}
-                  </span>
-                ))}
-              </div>
-            )}
-            {conditions.length > 0 && (
-              <p className="mt-2 font-mono text-[10px] uppercase tracking-[0.12em] text-soft/70">
-                {metCount} of {conditions.length} conditions met
-              </p>
-            )}
             <p className="mt-2 font-mono text-[9.5px] uppercase leading-relaxed tracking-[0.14em] text-soft/60">
               An interpretation of what already happened — never a forecast.
             </p>
           </div>
         </div>
-      </Card>
 
-      {/* ── LIFECYCLE — what the machine actually recorded ───────────────── */}
-      <Card className="mt-3">
-        <BoardEyebrow accent>Lifecycle</BoardEyebrow>
-        <div className="mt-3">
-          <LifecycleBar
-            pct={SETUP_BAR[setup.state]}
-            tone={meta.tone}
-            label={`Setup lifecycle: ${meta.label}`}
+        {/* ── THE PLAN AS A RAIL — Entry → Target, stop beneath ──────────── */}
+        {entry != null && target != null && (
+          <PlanRail
+            className="mt-6 rounded-[14px] border border-sand bg-card px-4 py-3.5"
+            from={{ label: "Entry", value: entry }}
+            to={{ label: "Target", value: target, color: "var(--color-price-up)" }}
+            stop={stop}
+            accent={hue}
           />
-        </div>
-        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 font-mono text-[10px] uppercase tracking-[0.1em] text-soft/80">
-          <span>
-            {meta.label} since{" "}
-            <span className="tabular-nums text-ink/80">
-              {new Date(setup.state_entered_at).toLocaleString(undefined, {
-                month: "short",
-                day: "numeric",
-                hour: "numeric",
-                minute: "2-digit",
-              })}
-            </span>
-          </span>
-          <span>Opened {stampDate(setup.created_at)}</span>
-          <span>Expires {stampDate(setup.expires_at)}</span>
-        </div>
-
-        {thread.length > 0 ? (
-          <ol className="mt-3 space-y-2 border-t border-sand pt-3">
-            {thread.map((e) => {
-              const st = (e.payload?.state as SetupState) || setup.state;
-              const tm = SETUP_STATE_META[st];
-              return (
-                <li key={e.id}>
-                  <CondRow
-                    met
-                    tone={tm?.tone ?? "quiet"}
-                    label={e.payload?.message || setupStateLine(st, setup.ticker)}
-                    value={timeAgo(e.fired_at)}
-                  />
-                </li>
-              );
-            })}
-          </ol>
-        ) : (
-          <p className="mt-3 border-t border-sand pt-3 text-[12px] leading-relaxed text-soft">
-            Only the current state is recorded here. Follow the setup and every step —
-            confirmed, triggered or called off — lands in your feed as it happens.
-          </p>
         )}
-      </Card>
 
-      {/* ── THE BRIEFING CALL — the owning trade_alert's own words ───────── */}
-      {broadcast && (broadcast.setup_label || broadcast.narrative) && (
-        <Card className="mt-3">
-          <BoardEyebrow>Kai&apos;s briefing call</BoardEyebrow>
-          <p className="mt-2.5 font-display text-[14.5px] font-bold leading-[1.3] tracking-[-0.01em] text-ink">
-            {broadcast.setup_label && broadcast.narrative ? (
-              <>
-                <b className="text-gold-700">{broadcast.setup_label}.</b> {broadcast.narrative}
-              </>
-            ) : (
-              broadcast.narrative || broadcast.setup_label
-            )}
+        {/* ── THE STORY AS A THREAD — recorded beats, then the live chat ── */}
+        <section className="mt-8">
+          <p className="mb-3 font-mono text-[9px] font-semibold uppercase tracking-[0.16em] text-soft/80">
+            The story
           </p>
-          {(broadcast.targets ?? []).some((t) => t.label) && (
-            <div className="mt-3 flex flex-wrap gap-1.5">
-              {broadcast.targets.map(
-                (t, i) =>
-                  t.label && (
-                    <span
-                      key={i}
-                      className="rounded-full border border-sand bg-paper px-2.5 py-1 font-mono text-[10px] tabular-nums text-soft"
-                    >
-                      {t.label} · {money(t.price)}
-                    </span>
-                  )
-              )}
-            </div>
-          )}
-          <p className="mt-3 font-mono text-[9.5px] uppercase tracking-[0.12em] text-soft/70">
-            Issued {timeAgo(broadcast.issued_at)}
-          </p>
-        </Card>
-      )}
-
-      {/* ── ACTIONS — follow the thread · chart · research ───────────────── */}
-      <div className="mt-4 flex flex-wrap items-center gap-2">
-        <WatchSetupButton setupId={setup.id} initialSubscribed={!!setup.subscribed} />
-        <Link
-          href={`/chart?symbol=${encodeURIComponent(setup.ticker)}`}
-          className="f0-focus f0-press inline-flex items-center gap-2 rounded-[11px] border border-sand bg-card px-3 py-2 text-[12.5px] font-bold text-ink transition hover:border-accent/45 hover:bg-paper"
-        >
-          <LineChart className="h-[15px] w-[15px] text-soft" />
-          Open chart
-        </Link>
-        <Link
-          href={`/research/${encodeURIComponent(setup.ticker)}`}
-          className="ml-auto inline-flex items-center gap-1 text-[12.5px] font-semibold text-gold-700 transition hover:text-gold-600"
-        >
-          Research {setup.ticker} <ChevronRight className="h-3.5 w-3.5" />
-        </Link>
-      </div>
-
-      {/* ── RELATED EVENTS on this ticker (this member's own feed) ───────── */}
-      {related.length > 0 && (
-        <section className="mt-6">
-          <BoardEyebrow className="mb-2">More on ${setup.ticker}</BoardEyebrow>
-          <div className="space-y-2">
-            {related.map((e) => (
-              <CardLink key={e.id} href={`/alerts/e/${encodeURIComponent(e.id)}`}>
-                <div className="flex items-center gap-3">
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-[13px] font-semibold text-ink">
-                      {e.payload?.message || "Kai flagged something"}
-                    </span>
-                    <span className="mt-0.5 block font-mono text-[9.5px] uppercase tracking-[0.12em] text-soft/70">
-                      {e.kind === "broadcast"
-                        ? "Kai briefing"
-                        : e.kind === "kai_update"
-                          ? "Kai update"
-                          : e.kind === "setup_update"
-                            ? "Setup update"
-                            : "Your alert"}{" "}
-                      · {timeAgo(e.fired_at)}
-                    </span>
-                  </span>
-                  <ChevronRight className="h-4 w-4 shrink-0 text-soft/70" />
-                </div>
-              </CardLink>
+          <ol className="space-y-3">
+            {beats.map((b) => (
+              <StoryBeat key={b.id} text={b.text} at={b.at} />
             ))}
+          </ol>
+
+          {/* the SAME thread continues into the real Kai chat */}
+          <div className="mt-4">
+            {kaiOpen ? (
+              <div className="h-[min(70vh,560px)] overflow-hidden rounded-[16px] border border-sand bg-card">
+                <KaiChatShared
+                  variant="panel"
+                  onClose={() => setKaiOpen(false)}
+                  contextChip={kaiChip}
+                  initialInput={kaiQuery}
+                  contextNonce={kaiNonce}
+                />
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={openKaiInline}
+                className="f0-focus f0-press flex w-full items-center gap-2.5 rounded-[22px] border border-sand bg-card px-4 py-3 text-left transition hover:border-[color:var(--kai-blue)]"
+              >
+                <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-kai-500 text-[10px] font-bold text-white">
+                  K
+                </span>
+                <span className="min-w-0 flex-1 truncate text-[13.5px] text-soft">
+                  Message Kai about the {setup.ticker} {meta.label.toLowerCase()} setup…
+                </span>
+                <Sparkles className="h-4 w-4 shrink-0 text-kai-blue" />
+              </button>
+            )}
           </div>
         </section>
-      )}
 
-      {/* ── ASK KAI ABOUT THIS ALERT — the real chat, inline, seeded ─────── */}
-      <section className="mt-7">
-        <BoardEyebrow accent className="mb-2">
-          Ask Kai about this alert
-        </BoardEyebrow>
-        {kaiOpen ? (
-          <div className="h-[min(70vh,560px)] overflow-hidden rounded-[16px] border border-sand bg-card">
-            <KaiChatShared
-              variant="panel"
-              onClose={() => setKaiOpen(false)}
-              contextChip={kaiChip}
-              initialInput={kaiQuery}
-              contextNonce={kaiNonce}
-            />
-          </div>
-        ) : (
-          <button
-            type="button"
-            onClick={openKaiInline}
-            className="f0-focus f0-press flex w-full items-center gap-3 rounded-[26px] border border-sand bg-card px-4 py-3 text-left shadow-soft transition hover:border-[color:var(--kai-blue)]"
-          >
-            <Sparkles className="h-4 w-4 shrink-0 text-kai-blue" />
-            <span className="min-w-0 flex-1 truncate text-[14px] text-soft">
-              Ask Kai about the {setup.ticker} {meta.label.toLowerCase()} setup…
-            </span>
-            <span className="shrink-0 font-mono text-[9.5px] uppercase tracking-[0.12em] text-soft/70">
-              <Eye className="mr-1 inline h-3 w-3 align-[-2px]" aria-hidden />
-              Kai sees this setup
-            </span>
-          </button>
-        )}
-      </section>
-
-      <p className="mt-6 text-[11px] leading-relaxed text-soft/70">
-        This is educational market analysis, not financial advice or a recommendation to buy or sell.
-        Prices may be delayed. Past performance never guarantees future results.
-      </p>
+        <p className="mt-8 text-[11px] leading-relaxed text-soft/70">
+          This is educational market analysis, not financial advice or a recommendation to buy or sell.
+          Prices may be delayed. Past performance never guarantees future results.
+        </p>
+      </div>
     </div>
   );
 }
 
-/** Fixed lifecycle positions (mirrors the setup ladder used across the hub). */
-const SETUP_BAR: Record<SetupState, number> = {
-  waiting: 18,
-  confirmed: 78,
-  triggered: 100,
-  invalidated: 100,
-  expired: 30,
-};
-
-/* ── distance-to-trigger: live price measured against the stored entry ─────
-   (SetupGraphCard's readout, copied per the copy-small-patterns rule.) */
-function TriggerDistance({
-  entry,
-  stop,
-  current,
-  direction,
-}: {
-  entry: number;
-  stop: number | null;
-  current: number;
-  direction: string;
-}) {
-  const past = direction === "short" ? current <= entry : current >= entry;
-  const dist = Math.abs(entry - current);
-  const awayPct = current > 0 ? (dist / current) * 100 : 0;
-
-  let pos: number | null = null;
-  if (stop != null && stop !== entry) {
-    pos = Math.max(0, Math.min(1, (current - stop) / (entry - stop)));
-  }
-
+/* ── one SMS-style beat: Kai's line in a bubble + the real mono timestamp ── */
+function StoryBeat({ text, at }: { text: string; at: string }) {
   return (
-    <div className="mt-2.5">
-      {pos != null && (
-        <div
-          role="img"
-          aria-label={
-            past
-              ? "Price is at or past the trigger level"
-              : `Price is ${Math.round(pos * 100)} percent of the way from the stop to the trigger level`
-          }
-          className="h-[5px] overflow-hidden rounded-[3px] bg-sand"
-        >
-          <span
-            aria-hidden
-            className="block h-full rounded-[3px] bg-volt-500"
-            style={{ width: `${(past ? 1 : pos) * 100}%` }}
-          />
+    <li className="flex items-start gap-2.5">
+      <span
+        aria-hidden
+        className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full bg-kai-500 text-[10px] font-bold text-white"
+      >
+        K
+      </span>
+      <div className="min-w-0">
+        <div className="rounded-[16px] rounded-tl-[5px] border border-sand bg-card px-3.5 py-2.5">
+          <p className="text-[13px] leading-relaxed text-kai-blue">&ldquo;{text}&rdquo;</p>
         </div>
-      )}
-      <p className="mt-1.5 font-mono text-[10px] uppercase tracking-[0.1em] text-soft/80">
-        {past
-          ? "At the trigger level"
-          : `$${money(dist)} to trigger · ${awayPct.toFixed(1)}% away`}
-      </p>
-    </div>
+        <p className="mt-1 font-mono text-[9px] uppercase tracking-[0.1em] text-soft/60">
+          {stamp(at)}
+        </p>
+      </div>
+    </li>
   );
 }
