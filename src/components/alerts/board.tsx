@@ -362,66 +362,9 @@ export function CountPill({
   );
 }
 
-/* ══════════════════════════════════════════════════════════════════════════
-   NAV CARD — board 06's four rows (icon · title · sub · chevron or badge).
-   ══════════════════════════════════════════════════════════════════════════ */
-export function NavCard({
-  href,
-  onClick,
-  icon,
-  title,
-  sub,
-  badge,
-}: {
-  /** A real destination. Omit and pass `onClick` for a row that moves within
-   *  the current board — a hash link to the page you are already on does not
-   *  re-run the deep-link effect, so it would silently do nothing. */
-  href?: string;
-  onClick?: () => void;
-  icon: React.ReactNode;
-  title: string;
-  sub: string;
-  badge?: number;
-}) {
-  const cls =
-    "f0-focus f0-press flex w-full items-center gap-3 rounded-[13px] border border-sand bg-card px-3.5 py-3 text-left transition hover:border-accent/45";
-  const inner = (
-    <>
-      <span className="grid h-8 w-8 shrink-0 place-items-center rounded-[9px] bg-paper text-soft">
-        {icon}
-      </span>
-      <span className="min-w-0 flex-1">
-        <span className="block truncate text-[13px] font-bold text-ink">
-          {title}
-        </span>
-        <span className="mt-px block truncate text-[10.5px] text-soft/85">
-          {sub}
-        </span>
-      </span>
-      {badge ? (
-        <span className="shrink-0 rounded-[8px] bg-accent px-1.5 py-0.5 font-mono text-[9px] font-bold tabular-nums text-night-950">
-          {badge}
-        </span>
-      ) : (
-        <span aria-hidden className="shrink-0 text-soft/70">
-          ›
-        </span>
-      )}
-    </>
-  );
-  if (href) {
-    return (
-      <Link href={href} className={cls}>
-        {inner}
-      </Link>
-    );
-  }
-  return (
-    <button type="button" onClick={onClick} className={cls}>
-      {inner}
-    </button>
-  );
-}
+/* NAV CARD deleted 2026-08-10 — it existed only for the alerts Overview's
+   four redundant nav rows (destinations already on the tab rail / WatchRail);
+   the IA rebuild removed the rows, so the object goes with them. */
 
 /* ══════════════════════════════════════════════════════════════════════════
    CONDITION ROW — board 06 / 19's checklist.

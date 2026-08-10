@@ -24,8 +24,6 @@ import {
   Bell,
   ChevronDown,
   Gauge,
-  LineChart,
-  RefreshCw,
   Trophy,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -46,7 +44,6 @@ import {
   StatGrid,
   LifecycleBar,
   CountPill,
-  NavCard,
   CondRow,
   Eyebrow as BoardEyebrow,
   BoardLead,
@@ -90,24 +87,35 @@ import {
 } from "@/lib/alerts/watch-ui";
 
 /**
- * /alerts — KAI WATCH, rebuilt on the owner's canvas.
+ * /alerts — KAI WATCH, information architecture rebuilt 2026-08-10.
  *
- * Boards 06 (Watch · overview), 18 (Watch · Kai Alerts) and 19 (Alert setup) are
- * the reference. They are CARD boards: the big lowercase wordmark, the orange
- * pill rail, then white cards on warm paper — nav rows, the accent "getting
- * close" card with its ring, alert cards with a coloured left edge, and compact
- * dimmed rows for anything older than today. The obsidian Kai masthead that used
- * to open this screen is not on any of those boards and is gone.
+ * The screen accreted across passes into five tabs that answered three
+ * questions. It now follows the owner's stated mental model directly —
+ * "alerts should display all current alerts visually in graphic format, then
+ * alert history, then winners/losers as shareable cards":
  *
- * WHAT THE CANVAS ASKS FOR THAT WE WILL NOT SAY: board 18 labels its cards BUY
- * SIGNAL and SELL SIGNAL in the price colours. An alert states what HAPPENED, so
- * the pill carries the state machine's own word (Triggered · Heating up ·
- * Building · Into earnings) on the state ramp, and green/red stay on price.
- * The chips under a card body carry MEASURED quantities the cron recorded —
- * never invented checkmarks.
+ *   NOW      — the graphic setup board (SetupGraphCard grid) leading, then
+ *              Getting Close, then the member's own watches as a compact
+ *              secondary section (every edit affordance intact: toggle,
+ *              digest, delete, NL creation, plays, prefs, tuner), then the
+ *              Daily Brief blocks (Kai Daily picks / the honest empty state).
+ *   HISTORY  — ONE chronological surface: resolved setups + fired watches +
+ *              Kai broadcasts merged into a single day-bucketed feed, every
+ *              row in the same Kai Watch card anatomy.
+ *   RECORD   — the honest track-record stats band on top, then every graded
+ *              outcome as a shareable card (All / Wins / Losses), then the
+ *              never-scored observational split.
+ *
+ * Old deep-links (#overview/#daily/#watch/#live/#history/#track/#kai-nl)
+ * remap onto the new tabs in the hash effect below — no inbound link lands
+ * on nothing.
+ *
+ * CARD LAW (unchanged): the pill carries the state machine's own word, never
+ * BUY/SELL; green/red stay on price; chips carry MEASURED quantities the
+ * cron recorded — never invented checkmarks.
  */
 
-type Tab = "overview" | "daily" | "watch" | "history" | "track";
+type Tab = "now" | "history" | "record";
 
 /** What the cron recorded alongside a watch's current state (migration 157). */
 type WatchDetail = WatchCurrentState["detail"];
@@ -166,42 +174,64 @@ export default function AlertsClient({
   setups: initialSetups,
   observational,
 }: Props) {
-  const [tab, setTab] = useState<Tab>("overview");
+  const [tab, setTab] = useState<Tab>("now");
   const [rules, setRules] = useState(initialRules);
   const [setups, setSetups] = useState(initialSetups);
 
-  // Deep-link. Two shapes, and they are NOT the same thing:
-  //   #overview|#daily|#watch|#history|#track → a tab name (the detail screen's
-  //     "Edit this watch" uses #watch). #live is kept as an alias: the Live
-  //     Watches tab was absorbed into the canvas's OVERVIEW board, and old links
-  //     must not land on nothing.
-  //   #kai-nl → an ELEMENT inside the watch tab (the ticker page's Kai Report
-  //     panel links here to start a natural-language watch). It selects the
-  //     owning tab first and scrolls to the node once it exists.
+  // Deep-link. The 2026-08-10 IA collapse (5 tabs → 3) must not strand a
+  // single inbound link, so every OLD hash remaps onto its new home:
+  //   #overview / #daily / #watch / #live → NOW (the tab that absorbed them);
+  //     #watch additionally scrolls to the watches section (the detail
+  //     screen's "Edit this watch" link) and #daily to the Daily Brief.
+  //   #history → HISTORY · #track → RECORD (ShareOutcomeCard's share URL).
+  //   #kai-nl → an ELEMENT inside NOW (the ticker page's Kai Report panel
+  //     links here to start a natural-language watch).
+  // New links use #now/#history/#record directly.
   useEffect(() => {
     const hash = window.location.hash.replace("#", "");
     if (!hash) return;
-    if (hash === "live") {
-      setTab("overview");
-      return;
-    }
-    const valid: Tab[] = ["overview", "daily", "watch", "history", "track"];
+    const valid: Tab[] = ["now", "history", "record"];
+    const LEGACY: Record<string, Tab> = {
+      overview: "now",
+      daily: "now",
+      watch: "now",
+      live: "now",
+      history: "history",
+      track: "record",
+    };
+    let target: Tab | null = null;
+    let scrollId: string | null = null;
+    let block: ScrollLogicalPosition = "start";
     if ((valid as string[]).includes(hash)) {
-      setTab(hash as Tab);
-      return;
+      target = hash as Tab;
+    } else if (hash in LEGACY) {
+      target = LEGACY[hash];
+      if (hash === "watch") scrollId = "my-watches";
+      if (hash === "daily") scrollId = "daily-brief";
+    } else if (hash === "kai-nl") {
+      target = "now";
+      scrollId = "kai-nl";
+      block = "center";
     }
-    if (hash === "kai-nl") {
-      setTab("watch");
-      // Two frames: one for the tab swap to commit, one for the AnimatePresence
-      // enter to lay out, before the node can be measured.
-      requestAnimationFrame(() =>
+    if (!target) return;
+    const finalTarget = target;
+    const finalScrollId = scrollId;
+    // Deferred one frame so the effect body stays a pure read (no synchronous
+    // setState → no cascading-render), then two more frames for the tab swap
+    // to commit and AnimatePresence to lay out before the node is measured.
+    const raf = requestAnimationFrame(() => {
+      setTab(finalTarget);
+      if (finalScrollId) {
         requestAnimationFrame(() =>
-          document
-            .getElementById("kai-nl")
-            ?.scrollIntoView({ behavior: "smooth", block: "center" })
-        )
-      );
-    }
+          requestAnimationFrame(() =>
+            document
+              .getElementById(finalScrollId)
+              ?.scrollIntoView({ behavior: "smooth", block })
+          )
+        );
+      }
+    });
+    return () => cancelAnimationFrame(raf);
   }, []);
 
   // Stamp the "I have seen the hub" watermark that the N-new count reads back
@@ -264,28 +294,19 @@ export default function AlertsClient({
     return n;
   }, [activeRules, stateByRule, followedSetups]);
 
-  // ONE CONTROL, NOT TWO. These five sections used to ride <SectionPills> — a
-  // second row of filled pills directly under the cross-surface pill rail. The
-  // rail has gone inline (see WatchHead), and the sections moved onto the
-  // canvas's shared <SegmentedRail>, which is the app's one answer to "pick one
-  // of N": an underline carried by type weight first and colour second, so it
-  // still reads with colour stripped and it never becomes pill soup. Nothing
-  // was dropped — all five sections are here, and the live watch count that the
-  // pills carried in a superscript now rides the label itself.
+  // ONE CONTROL, NOT TWO — the sections ride the canvas's shared
+  // <SegmentedRail> (underline, type-weight first). Three tabs, the owner's
+  // mental model verbatim: what is live NOW, what already happened (HISTORY),
+  // and the open RECORD. The live-watch count rides the head band's readings
+  // rather than a tab label, because "My watches" is no longer a room — it is
+  // a section inside NOW.
   const TAB_ITEMS = useMemo<SegmentedOption<Tab>[]>(
     () => [
-      { id: "overview", label: "Overview" },
-      { id: "daily", label: "Kai Daily" },
-      {
-        id: "watch",
-        label: activeRules.length
-          ? `My watches · ${activeRules.length}`
-          : "My watches",
-      },
-      { id: "history", label: "Alerts" },
-      { id: "track", label: "Record" },
+      { id: "now", label: "Now" },
+      { id: "history", label: "History" },
+      { id: "record", label: "Record" },
     ],
-    [activeRules.length]
+    []
   );
 
   return (
@@ -316,42 +337,24 @@ export default function AlertsClient({
           exit={{ opacity: 0, y: -6 }}
           transition={{ duration: 0.15 }}
         >
-          {tab === "overview" && (
-            <OverviewTab
-              onGo={setTab}
-              rules={activeRules}
-              stateByRule={stateByRule}
-              detailByRule={detailByRule}
-              setups={setups}
-              priceMap={priceMap}
-              watchlistCount={watchlistTickers.length}
-              activeCount={activeRules.length}
-              broadcastCount={broadcasts.length}
-              newSinceSeen={newSinceSeen}
-            />
-          )}
-          {tab === "daily" && (
-            <KaiDailyTab
-              broadcasts={broadcasts}
-              events={events}
-              setups={setups}
-              setSetups={setSetups}
-              priceMap={priceMap}
-              marketEvents={marketEvents}
-              sampleAlert={sampleAlert}
-            />
-          )}
-          {tab === "watch" && (
-            <MyWatchTab
+          {tab === "now" && (
+            <NowTab
               userId={userId}
               rules={rules}
               setRules={setRules}
               stateByRule={stateByRule}
               detailByRule={detailByRule}
+              setups={setups}
+              setSetups={setSetups}
+              priceMap={priceMap}
               isSolo={isSolo}
               prefs={initialPrefs}
               strategy={initialStrategy}
               watchlistTickers={watchlistTickers}
+              broadcasts={broadcasts}
+              events={events}
+              marketEvents={marketEvents}
+              sampleAlert={sampleAlert}
             />
           )}
           {tab === "history" && (
@@ -362,11 +365,9 @@ export default function AlertsClient({
               track={trackRecord}
               priceMap={priceMap}
               hubSeenAt={hubSeenAt}
-              lastChecked={lastChecked}
-              newSinceSeen={newSinceSeen}
             />
           )}
-          {tab === "track" && (
+          {tab === "record" && (
             <TrackRecordTab track={trackRecord} observational={observational} sampleAlert={sampleAlert} />
           )}
         </m.div>
@@ -449,47 +450,62 @@ function WatchHead({
 }
 
 /* ============================================================================
- * OVERVIEW — canvas board 06.
- *
- * The board draws four nav rows, then the "GETTING CLOSE" accent card with its
- * ring, then a compact row for the next setup along. Three of the four nav rows
- * have real destinations in this app; the fourth (an earnings calendar) has no
- * data source, so it is not drawn as a dead row.
+ * NOW — the owner's first thought: "all current alerts visually in graphic
+ * format". The graphic setup board leads, Getting Close follows, the member's
+ * own watches sit as a compact secondary section (every edit affordance
+ * intact), and the Daily Brief blocks close the tab. The four nav rows the
+ * old Overview drew (My watchlist / Kai Watch / Kai Daily / Opinion changes)
+ * are gone: every destination they carried already lives on the tab rail or
+ * the inline WatchRail one gaze up.
  * ==========================================================================*/
-function OverviewTab({
-  onGo,
+function NowTab({
+  userId,
   rules,
+  setRules,
   stateByRule,
   detailByRule,
   setups,
+  setSetups,
   priceMap,
-  watchlistCount,
-  activeCount,
-  broadcastCount,
-  newSinceSeen,
+  isSolo,
+  prefs,
+  strategy,
+  watchlistTickers,
+  broadcasts,
+  events,
+  marketEvents,
+  sampleAlert,
 }: {
-  onGo: (t: Tab) => void;
+  userId: string;
   rules: AlertRule[];
+  setRules: React.Dispatch<React.SetStateAction<AlertRule[]>>;
   stateByRule: Map<string, WatchState>;
   detailByRule: Map<string, WatchDetail>;
   setups: AlertSetup[];
+  setSetups: React.Dispatch<React.SetStateAction<AlertSetup[]>>;
   priceMap: Record<string, number>;
-  watchlistCount: number;
-  activeCount: number;
-  broadcastCount: number;
-  newSinceSeen: number;
+  isSolo: boolean;
+  prefs: AlertPrefs;
+  strategy: StrategyProfile | null;
+  watchlistTickers: { ticker: string; company_name: string }[];
+  broadcasts: TradeAlert[];
+  events: AlertEvent[];
+  marketEvents: Props["marketEvents"];
+  sampleAlert: SampleAlert | null;
 }) {
+  const activeRules = useMemo(() => rules.filter((r) => r.active), [rules]);
+
   // Everything actually developing, ordered by how close the cron says it is.
   // The nearest one becomes the board's accent card; the rest are compact rows.
   const developing = useMemo(() => {
-    const rows = rules
+    const rows = activeRules
       .map((r) => ({ r, state: stateByRule.get(r.id), detail: detailByRule.get(r.id) ?? null }))
       .filter(
         (x): x is { r: AlertRule; state: WatchState; detail: WatchDetail | null } =>
           !!x.state && WATCH_STATE_META[x.state].developing
       );
     return rows.sort((a, b) => (b.detail?.progress ?? 0) - (a.detail?.progress ?? 0));
-  }, [rules, stateByRule, detailByRule]);
+  }, [activeRules, stateByRule, detailByRule]);
 
   // The visual board's rows: every LIVE Kai Daily setup (developing lifecycle
   // state), each drawn as a graphic card — real month chart + stored level
@@ -511,8 +527,8 @@ function OverviewTab({
   const rest = developing.slice(1);
 
   return (
-    <div className="space-y-6">
-      {/* ── LIVE SETUPS — the overview leads with the graphic board ─────── */}
+    <div>
+      {/* ── LIVE SETUPS — the tab leads with the graphic board ──────────── */}
       {liveSetups.length > 0 && (
         <section>
           <BoardEyebrow
@@ -534,79 +550,43 @@ function OverviewTab({
         </section>
       )}
 
-      {/* ── the board's four rows ───────────────────────────────────────── */}
-      <div className="space-y-2">
-        <NavCard
-          href="/watchlist"
-          icon={<LineChart className="h-4 w-4" />}
-          title="My watchlist"
-          sub={
-            watchlistCount === 0
-              ? "Nothing on the board yet"
-              : `${watchlistCount} ${watchlistCount === 1 ? "company" : "companies"}`
-          }
-        />
-        <NavCard
-          onClick={() => onGo("watch")}
-          icon={<Eye className="h-4 w-4" />}
-          title="Kai Watch"
-          sub={
-            activeCount === 0
-              ? "Tell Kai what to watch"
-              : `${activeCount} active ${activeCount === 1 ? "setup" : "setups"}`
-          }
-          badge={developing.length || undefined}
-        />
-        <NavCard
-          onClick={() => onGo("daily")}
-          icon={<Bell className="h-4 w-4" />}
-          title="Kai Daily"
-          sub={
-            broadcastCount === 0
-              ? "Kai's briefing setups land here"
-              : `${broadcastCount} recent ${broadcastCount === 1 ? "setup" : "setups"}`
-          }
-          badge={newSinceSeen || undefined}
-        />
-        <NavCard
-          href="/watchlist/community"
-          icon={<RefreshCw className="h-4 w-4" />}
-          title="Opinion changes"
-          sub="Who the club re-thought in the last 24 hours"
-        />
+      {/* ── GETTING CLOSE — the board's centrepiece ─────────────────────── */}
+      <div className="mt-6">
+        {lead ? (
+          <GettingCloseCard
+            r={lead.r}
+            state={lead.state}
+            detail={lead.detail}
+            current={lead.r.ticker ? priceMap[lead.r.ticker] ?? null : null}
+          />
+        ) : (
+          <Card className="px-4 py-5">
+            <BoardEyebrow accent>Getting close</BoardEyebrow>
+            <p className="mt-2 font-display text-[16px] font-extrabold text-ink">
+              Nothing at the doorstep
+            </p>
+            <p className="mt-1.5 max-w-md text-[12.5px] leading-relaxed text-soft">
+              Kai is watching quietly. The moment one of your conditions starts to
+              build, it moves up here with how close it is — so you read it before
+              it trips, not after.
+            </p>
+            <button
+              onClick={() =>
+                document
+                  .getElementById("my-watches")
+                  ?.scrollIntoView({ behavior: "smooth", block: "start" })
+              }
+              className="f0-focus mt-3 inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-gold-700 transition hover:text-gold-600"
+            >
+              Tell Kai what to watch <ArrowRight className="h-3.5 w-3.5" />
+            </button>
+          </Card>
+        )}
       </div>
 
-      {/* ── GETTING CLOSE — the board's centrepiece ─────────────────────── */}
-      {lead ? (
-        <GettingCloseCard
-          r={lead.r}
-          state={lead.state}
-          detail={lead.detail}
-          current={lead.r.ticker ? priceMap[lead.r.ticker] ?? null : null}
-        />
-      ) : (
-        <Card className="px-4 py-5">
-          <BoardEyebrow accent>Getting close</BoardEyebrow>
-          <p className="mt-2 font-display text-[16px] font-extrabold text-ink">
-            Nothing at the doorstep
-          </p>
-          <p className="mt-1.5 max-w-md text-[12.5px] leading-relaxed text-soft">
-            Kai is watching quietly. The moment one of your conditions starts to
-            build, it moves up here with how close it is — so you read it before
-            it trips, not after.
-          </p>
-          <button
-            onClick={() => onGo("watch")}
-            className="f0-focus mt-3 inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-gold-700 transition hover:text-gold-600"
-          >
-            Tell Kai what to watch <ArrowRight className="h-3.5 w-3.5" />
-          </button>
-        </Card>
-      )}
-
-      {/* ── everything else on the move ─────────────────────────────────── */}
+      {/* ── everything else on the move (same thought as Getting Close) ─── */}
       {rest.length > 0 && (
-        <section className="space-y-2">
+        <section className="mt-4 space-y-2">
           <BoardEyebrow className="mb-1">Also developing</BoardEyebrow>
           {rest.map(({ r, state, detail }) => (
             <DevelopingRow
@@ -620,6 +600,29 @@ function OverviewTab({
         </section>
       )}
 
+      {/* ── YOUR WATCHES — the compact secondary section (all edits) ────── */}
+      <MyWatchesSection
+        userId={userId}
+        rules={rules}
+        setRules={setRules}
+        stateByRule={stateByRule}
+        detailByRule={detailByRule}
+        isSolo={isSolo}
+        prefs={prefs}
+        strategy={strategy}
+        watchlistTickers={watchlistTickers}
+      />
+
+      {/* ── DAILY BRIEF — Kai's issued picks, folded in from the old tab ── */}
+      <DailyBriefSection
+        broadcasts={broadcasts}
+        events={events}
+        setups={setups}
+        setSetups={setSetups}
+        priceMap={priceMap}
+        marketEvents={marketEvents}
+        sampleAlert={sampleAlert}
+      />
     </div>
   );
 }
@@ -794,9 +797,11 @@ function DevelopingRow({
 }
 
 /* ============================================================================
- * KAI DAILY — canvas board 18's alert cards, one per broadcast.
+ * DAILY BRIEF — canvas board 18's alert cards, one per broadcast. Was the
+ * "Kai Daily" tab; now the closing section of NOW (a brief is a section of
+ * the day, not a room of its own). #daily deep-links land on the section id.
  * ==========================================================================*/
-function KaiDailyTab({
+function DailyBriefSection({
   broadcasts,
   events,
   setups,
@@ -860,12 +865,25 @@ function KaiDailyTab({
   const mkt = marketStatus();
 
   return (
-    <div className="space-y-6">
+    <section id="daily-brief" className="mt-8">
+      <BoardEyebrow
+        accent
+        className="mb-2"
+        meta={
+          broadcasts.length > 0 ? (
+            <span className="font-mono text-[10px] tabular-nums text-soft/70">
+              {broadcasts.length} live · {mkt.label.toLowerCase()}
+            </span>
+          ) : undefined
+        }
+      >
+        Daily brief
+      </BoardEyebrow>
       <p className="max-w-lg text-[13px] leading-relaxed text-soft">
         Kai&apos;s read on the market — the setups worth studying, laid out as a plan:
         where it works, where it&apos;s wrong, and what you&apos;d risk to make.
       </p>
-
+      <div className="mt-4 space-y-6">
       {broadcasts.length === 0 ? (
         /* ── STRONG EMPTY STATE ────────────────────────────────────────────
            The SMS→app pipeline that writes trade_alerts is paused, so there is
@@ -875,7 +893,7 @@ function KaiDailyTab({
         <>
           <FoundingState
             title="No live setups right now"
-            body="Kai posts fresh picks pre-market. When a setup is worth studying, it lands here as a full plan — the call, the levels, and what you'd risk to make. Meanwhile, tell Kai what to watch for you in My watches."
+            body="Kai posts fresh picks pre-market. When a setup is worth studying, it lands here as a full plan — the call, the levels, and what you'd risk to make. Meanwhile, tell Kai what to watch for you in Your watches above."
           />
 
           {sampleAlert && (
@@ -910,17 +928,6 @@ function KaiDailyTab({
         </>
       ) : (
         <>
-          <BoardEyebrow
-            accent
-            className="mb-1"
-            meta={
-              <span className="font-mono text-[10px] tabular-nums text-soft/70">
-                {broadcasts.length} live · {mkt.label.toLowerCase()}
-              </span>
-            }
-          >
-            Today&apos;s picks
-          </BoardEyebrow>
           {groups.map((g) => {
             /* CheatCodeDoors' Daily Brief blocks (Morning 8:15 · Midday 12:30).
                The prototype's third block (Close · how the day resolved) has no
@@ -959,7 +966,8 @@ function KaiDailyTab({
           })}
         </>
       )}
-    </div>
+      </div>
+    </section>
   );
 }
 
@@ -1057,26 +1065,12 @@ function KaiRead({ text, className = "" }: { text: string; className?: string })
   );
 }
 
-/**
- * Which WAY a setup is drawn — the direction of the level being watched, not an
- * instruction. Carried by an arrow and the word, never by a green/red pill:
- * green and red belong to price, and a green LONG badge is a verdict in a
- * costume.
- */
-const DIR_GLYPH: Record<string, string> = { long: "↑", short: "↓", watch: "•" };
-
-function DirChip({ dir }: { dir: string }) {
-  const glyph = DIR_GLYPH[dir] ?? DIR_GLYPH.watch;
-  return (
-    <span className="inline-flex items-center gap-1 rounded-full bg-paper px-2 py-0.5 font-mono text-[9.5px] uppercase tracking-[0.1em] text-soft">
-      <span aria-hidden>{glyph}</span>
-      {dir}
-    </span>
-  );
-}
-
 /* ============================================================================
- * MY WATCHES — NL-first, intentions, and every watch as a card.
+ * YOUR WATCHES — NOW's compact secondary section. Was the "My watches" tab.
+ * The living list leads (with pause / digest / delete intact), creation
+ * follows NL-first, and everything tucked (ready-made plays, the manual
+ * builder, delivery prefs, the strategy tuner) folds into disclosure cards
+ * so the section stays secondary without losing a single affordance.
  * ==========================================================================*/
 const INTENTIONS: { id: string; label: string; icon: typeof Bell; prompt: string }[] = [
   { id: "price", label: "Price Level", icon: Target, prompt: "Tell me if NVDA drops below $150" },
@@ -1091,7 +1085,7 @@ const ADVANCED_INTENTIONS: { id: string; label: string; prompt: string }[] = [
   { id: "w52", label: "52-week high/low", prompt: "Let me know when MSFT hits a new 52-week high" },
 ];
 
-function MyWatchTab({
+function MyWatchesSection({
   userId,
   rules,
   setRules,
@@ -1115,8 +1109,6 @@ function MyWatchTab({
   const [seed, setSeed] = useState<{ text: string; nonce: number }>({ text: "", nonce: 0 });
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [newTicker, setNewTicker] = useState("");
-  const [showManual, setShowManual] = useState(false);
-  const [showTune, setShowTune] = useState(false);
 
   const activeCount = rules.filter((r) => r.active).length;
 
@@ -1166,14 +1158,53 @@ function MyWatchTab({
   }, [userId, setRules]);
 
   return (
-    <div className="space-y-6">
-      <p className="max-w-lg text-[13px] leading-relaxed text-soft">
+    <section id="my-watches" className="mt-8">
+      <BoardEyebrow
+        className="mb-2"
+        meta={
+          <span className="font-mono text-[10px] tabular-nums text-soft/70">
+            {activeCount}/{MAX_ACTIVE_RULES} active
+          </span>
+        }
+      >
+        Your watches
+      </BoardEyebrow>
+
+      {/* The living list leads — every watch as a card with the real trigger
+          condition spelled out, and every edit affordance intact (pause,
+          digest, delete). No "Kai is on it" hand-waving: if you can't read
+          the condition, you can't trust the alert. */}
+      {rules.length === 0 ? (
+        <Card className="px-4 py-5">
+          <p className="text-[13px] leading-relaxed text-soft">
+            Nothing on watch yet. Tell Kai what to watch below, or add one from
+            any screener row, watchlist row or research page.
+          </p>
+        </Card>
+      ) : (
+        <div className="space-y-2">
+          {rules.map((r) => (
+            <WatchManageCard
+              key={r.id}
+              r={r}
+              state={r.active ? stateByRule.get(r.id) ?? null : null}
+              detail={r.active ? detailByRule.get(r.id) ?? null : null}
+              onToggle={() => toggle(r)}
+              onDigest={(d) => setDigest(r, d)}
+              onRemove={() => remove(r)}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* ── creation — plain English first ──────────────────────────────── */}
+      <p className="mt-5 max-w-lg text-[13px] leading-relaxed text-soft">
         Say it in plain English — a stock, a price, a moment you care about. Kai
         turns it into a watch and tells you the moment it happens.
       </p>
 
       {/* Intentions — deterministic prefills (usable even if NL parse is offline). */}
-      <div className="flex flex-wrap gap-1.5">
+      <div className="mt-3 flex flex-wrap gap-1.5">
         {INTENTIONS.map((it) => {
           const Icon = it.icon;
           return (
@@ -1196,7 +1227,7 @@ function MyWatchTab({
         </button>
       </div>
       {showAdvanced && (
-        <div className="-mt-3 flex flex-wrap gap-1.5">
+        <div className="mt-2 flex flex-wrap gap-1.5">
           {ADVANCED_INTENTIONS.map((it) => (
             <button
               key={it.id}
@@ -1210,7 +1241,7 @@ function MyWatchTab({
       )}
 
       {/* NL entry point — the #kai-nl deep-link target. */}
-      <div id="kai-nl">
+      <div id="kai-nl" className="mt-3">
         <KaiWatch
           userId={userId}
           surface="strategy"
@@ -1220,100 +1251,88 @@ function MyWatchTab({
         />
       </div>
 
-      <WatchlistPlays userId={userId} watchlistTickers={watchlistTickers} rules={rules} setRules={setRules} />
+      {/* ── everything tucked — folded cards, zero affordances lost ─────── */}
+      <div className="mt-4 space-y-2">
+        <WatchlistPlays userId={userId} watchlistTickers={watchlistTickers} rules={rules} setRules={setRules} />
 
-      {/* Manual builder — reachable, tucked. */}
-      <Card>
-        <button
-          onClick={() => setShowManual((v) => !v)}
-          className="f0-focus flex w-full items-center justify-between"
-        >
-          <span className="text-[12.5px] font-bold text-ink">Or build one by hand</span>
-          <ChevronDown className={`h-4 w-4 text-soft transition-transform ${showManual ? "rotate-180" : ""}`} />
-        </button>
-        {showManual && (
-          <div className="mt-3 border-t border-sand pt-3">
-            <p className="mb-3 text-[12px] text-soft">
-              Enter a ticker to set a price, volume or technical watch on it.
-            </p>
-            <div className="flex items-center gap-2">
-              <input
-                value={newTicker}
-                onChange={(e) => setNewTicker(e.target.value.toUpperCase().replace(/[^A-Z.]/g, ""))}
-                placeholder="e.g. AAPL"
-                maxLength={8}
-                className="w-32 rounded-lg border border-sand bg-paper px-3 py-2 text-[14px] font-semibold text-ink outline-none focus:border-kai-500"
-              />
-              {newTicker.length >= 1 ? (
-                <span onClick={refresh}>
-                  <SetAlertButton ticker={newTicker} surface="manual" variant="full" stopPropagation={false} />
-                </span>
-              ) : (
-                <button
-                  disabled
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-sand px-3 py-1.5 text-[13px] font-semibold text-soft/50"
-                >
-                  <Plus className="h-4 w-4" /> Set watch
-                </button>
-              )}
-            </div>
-          </div>
-        )}
-      </Card>
-
-      {/* The living list — every watch as a card, with the real trigger
-          condition spelled out. No "Kai is on it" hand-waving: if you can't read
-          the condition, you can't trust the alert. */}
-      <section className="space-y-2">
-        <BoardEyebrow
-          className="mb-1"
-          meta={
-            <span className="font-mono text-[10px] tabular-nums text-soft/70">
-              {activeCount}/{MAX_ACTIVE_RULES} active
-            </span>
-          }
-        >
-          What Kai is watching
-        </BoardEyebrow>
-        {rules.length === 0 ? (
-          <Card className="px-4 py-5">
-            <p className="text-[13px] leading-relaxed text-soft">
-              Nothing on watch yet. Tell Kai what to watch above, or add one from
-              any screener row, watchlist row or research page.
-            </p>
-          </Card>
-        ) : (
-          rules.map((r) => (
-            <WatchManageCard
-              key={r.id}
-              r={r}
-              state={r.active ? stateByRule.get(r.id) ?? null : null}
-              detail={r.active ? detailByRule.get(r.id) ?? null : null}
-              onToggle={() => toggle(r)}
-              onDigest={(d) => setDigest(r, d)}
-              onRemove={() => remove(r)}
+        <FoldCard title="Build one by hand">
+          <p className="mb-3 text-[12px] text-soft">
+            Enter a ticker to set a price, volume or technical watch on it.
+          </p>
+          <div className="flex items-center gap-2">
+            <input
+              value={newTicker}
+              onChange={(e) => setNewTicker(e.target.value.toUpperCase().replace(/[^A-Z.]/g, ""))}
+              placeholder="e.g. AAPL"
+              maxLength={8}
+              className="w-32 rounded-lg border border-sand bg-paper px-3 py-2 text-[14px] font-semibold text-ink outline-none focus:border-kai-500"
             />
-          ))
-        )}
-      </section>
-
-      <DeliveryPrefs isSolo={isSolo} prefs={prefs} />
-
-      {/* Fine-tuning (strategy profile) — reachable, tucked. */}
-      <Card>
-        <button onClick={() => setShowTune((v) => !v)} className="f0-focus flex w-full items-center justify-between">
-          <span className="flex items-center gap-2 text-[12.5px] font-bold text-ink">
-            <Gauge className="h-3.5 w-3.5 text-gold-700" /> Tune what Kai suggests
-          </span>
-          <ChevronDown className={`h-4 w-4 text-soft transition-transform ${showTune ? "rotate-180" : ""}`} />
-        </button>
-        {showTune && (
-          <div className="mt-4 border-t border-sand pt-4">
-            <StrategyTuner userId={userId} strategy={strategy} rules={rules} setRules={setRules} />
+            {newTicker.length >= 1 ? (
+              <span onClick={refresh}>
+                <SetAlertButton ticker={newTicker} surface="manual" variant="full" stopPropagation={false} />
+              </span>
+            ) : (
+              <button
+                disabled
+                className="inline-flex items-center gap-1.5 rounded-lg border border-sand px-3 py-1.5 text-[13px] font-semibold text-soft/50"
+              >
+                <Plus className="h-4 w-4" /> Set watch
+              </button>
+            )}
           </div>
-        )}
-      </Card>
-    </div>
+        </FoldCard>
+
+        <DeliveryPrefs isSolo={isSolo} prefs={prefs} />
+
+        <FoldCard
+          title="Tune what Kai suggests"
+          icon={<Gauge className="h-3.5 w-3.5 text-gold-700" />}
+        >
+          <StrategyTuner userId={userId} strategy={strategy} rules={rules} setRules={setRules} />
+        </FoldCard>
+      </div>
+    </section>
+  );
+}
+
+/**
+ * FOLD CARD — the section's one disclosure object. The manual builder, the
+ * ready-made plays, delivery prefs and the strategy tuner all used to draw
+ * their own expand/collapse chrome (or none); this is that pattern once.
+ */
+function FoldCard({
+  title,
+  icon,
+  meta,
+  children,
+}: {
+  title: string;
+  icon?: React.ReactNode;
+  meta?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <Card>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className="f0-focus flex w-full items-center justify-between gap-3"
+      >
+        <span className="flex min-w-0 items-center gap-2 text-[12.5px] font-bold text-ink">
+          {icon}
+          {title}
+        </span>
+        <span className="flex shrink-0 items-center gap-2">
+          {meta}
+          <ChevronDown
+            className={`h-4 w-4 text-soft transition-transform ${open ? "rotate-180" : ""}`}
+          />
+        </span>
+      </button>
+      {open && <div className="mt-3 border-t border-sand pt-3">{children}</div>}
+    </Card>
   );
 }
 
@@ -1466,21 +1485,21 @@ function DeliveryPrefs({ isSolo, prefs }: { isSolo: boolean; prefs: AlertPrefs }
     [briefing, digest, cap, quiet]
   );
 
-  // Canvas board 19's "NOTIFY ME" card: a titled card of labelled switches.
+  // Canvas board 19's "NOTIFY ME" card, folded into the section's disclosure
+  // vocabulary. Every switch and the cap select write exactly as before.
   return (
-    <Card>
-      <BoardEyebrow
-        meta={
-          saved ? (
-            <span className="inline-flex items-center gap-1 font-mono text-[9.5px] uppercase tracking-[0.14em] text-gold-700">
-              <Check className="h-3.5 w-3.5" /> Saved
-            </span>
-          ) : undefined
-        }
-      >
-        Notify me
-      </BoardEyebrow>
-      <div className="mt-3 space-y-3">
+    <FoldCard
+      title="Notify me"
+      icon={<Bell className="h-3.5 w-3.5 text-kai-600" />}
+      meta={
+        saved ? (
+          <span className="inline-flex items-center gap-1 font-mono text-[9.5px] uppercase tracking-[0.14em] text-gold-700">
+            <Check className="h-3.5 w-3.5" /> Saved
+          </span>
+        ) : undefined
+      }
+    >
+      <div className="space-y-3">
         <SwitchRow
           label="Kai Daily push"
           hint={isSolo ? "On by default for Club members" : "Opt-in for family accounts"}
@@ -1530,7 +1549,7 @@ function DeliveryPrefs({ isSolo, prefs }: { isSolo: boolean; prefs: AlertPrefs }
           </select>
         </div>
       </div>
-    </Card>
+    </FoldCard>
   );
 }
 
@@ -1572,12 +1591,20 @@ function SwitchRow({
 }
 
 /* ============================================================================
- * ALERTS — canvas board 18's feed: grouped by day, cards for today, compact
- * dimmed rows for everything older.
+ * HISTORY — ONE chronological surface. Board 18's feed (fired watches + Kai
+ * updates + broadcasts) MERGED with the resolved-setup outcomes that used to
+ * sit above it as a separate hairline ledger. Every moment — a watch firing,
+ * a pick going out, a setup resolving — is one row in one day-bucketed feed,
+ * all in the same Kai Watch card anatomy. Cards for today, compact dimmed
+ * rows for everything older.
  * ==========================================================================*/
 type FeedRow =
   | { type: "event"; at: string; ticker: string; e: AlertEvent }
-  | { type: "broadcast"; at: string; ticker: string; b: TradeAlert };
+  | { type: "broadcast"; at: string; ticker: string; b: TradeAlert }
+  | { type: "resolved"; at: string; ticker: string; s: AlertSetup };
+
+/** A setup whose lifecycle CLOSED — the machine's own final verdicts. */
+const RESOLVED_STATES: SetupState[] = ["triggered", "invalidated", "expired"];
 
 function HistoryTab({
   events,
@@ -1586,8 +1613,6 @@ function HistoryTab({
   track,
   priceMap,
   hubSeenAt,
-  lastChecked,
-  newSinceSeen,
 }: {
   events: AlertEvent[];
   broadcasts: TradeAlert[];
@@ -1595,16 +1620,27 @@ function HistoryTab({
   track: TrackRecord;
   priceMap: Record<string, number>;
   hubSeenAt: string | null;
-  lastChecked: string | null;
-  newSinceSeen: number;
 }) {
   const [q, setQ] = useState("");
+
+  // The track record's graded outcome per owning alert — joined onto a
+  // resolved row ONLY when the record genuinely graded that setup.
+  const outcomeByAlert = useMemo(() => {
+    const m = new Map<string, AlertOutcome>();
+    for (const o of track.outcomes) m.set(o.id, o);
+    return m;
+  }, [track]);
 
   const rows = useMemo<FeedRow[]>(() => {
     const es: FeedRow[] = events.map((e) => ({ type: "event", at: e.fired_at, ticker: e.ticker, e }));
     const bs: FeedRow[] = broadcasts.map((b) => ({ type: "broadcast", at: b.issued_at, ticker: b.ticker, b }));
-    return [...es, ...bs].sort((a, b) => +new Date(b.at) - +new Date(a.at));
-  }, [events, broadcasts]);
+    // A resolution is its own moment in time (state_entered_at) — it sits in
+    // the feed at the day it RESOLVED, distinct from the day it was issued.
+    const rs: FeedRow[] = setups
+      .filter((s) => RESOLVED_STATES.includes(s.state))
+      .map((s) => ({ type: "resolved", at: s.state_entered_at, ticker: s.ticker, s }));
+    return [...es, ...bs, ...rs].sort((a, b) => +new Date(b.at) - +new Date(a.at));
+  }, [events, broadcasts, setups]);
 
   const filtered = useMemo(() => {
     const needle = q.trim().toUpperCase();
@@ -1630,20 +1666,9 @@ function HistoryTab({
 
   return (
     <div className="space-y-5">
-      <Card className="flex items-center gap-3">
-        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-kai-500/12 text-kai-600 ring-1 ring-kai-500/25">
-          <Bell className="h-4 w-4" />
-        </span>
-        <div className="min-w-0 flex-1">
-          <p className="text-[13px] font-bold text-ink">Everything Kai has sent you</p>
-          <p className="mt-px truncate text-[10px] text-soft/85">
-            From your watchlist &amp; your watches ·{" "}
-            {lastChecked ? freshnessLabel(lastChecked).toLowerCase() : "not checked yet"}
-          </p>
-        </div>
-        {newSinceSeen > 0 && <CountPill>{newSinceSeen} new</CountPill>}
-      </Card>
-
+      {/* No second status band here — "Kai's alerts for you" in the header is
+          the one identity object for the whole hub. The tab opens straight on
+          its own control: the search. */}
       <div className="relative">
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-soft/60" />
         <input
@@ -1653,13 +1678,6 @@ function HistoryTab({
           className="w-full rounded-full border border-sand bg-card py-2.5 pl-9 pr-3 text-[13.5px] text-ink outline-none placeholder:text-soft/60 focus:border-kai-500"
         />
       </div>
-
-      {/* ── RESOLVED SETUPS — the clean outcome ledger ──────────────────────
-          Every Kai Daily setup whose lifecycle CLOSED (level hit / stopped /
-          expired) as one hairline-separated ledger: the machine's own verdict
-          chip, the peak favourable move where the record graded it, and an
-          R figure only when the stored legs genuinely carry one. */}
-      <ResolvedLedger setups={setups} track={track} q={q} />
 
       {filtered.length === 0 ? (
         <Card className="px-4 py-5">
@@ -1683,6 +1701,14 @@ function HistoryTab({
                   isNew={!!hubSeenAt && row.at > hubSeenAt}
                   compact={gi > 0}
                 />
+              ) : row.type === "resolved" ? (
+                <ResolvedSetupRow
+                  key={`s-${row.s.id}`}
+                  s={row.s}
+                  o={outcomeByAlert.get(row.s.alert_id)}
+                  isNew={!!hubSeenAt && row.at > hubSeenAt}
+                  compact={gi > 0}
+                />
               ) : (
                 <HistoryEventRow
                   key={`e-${row.e.id}`}
@@ -1701,118 +1727,86 @@ function HistoryTab({
 }
 
 /**
- * RESOLVED LEDGER — closed alert_setups lifecycles as one clean ledger.
+ * A RESOLVED SETUP in the feed, on the SAME Kai Watch card anatomy as every
+ * other row (identity row · mono state chip · urgency-tiered headline · the
+ * stat rows the record genuinely carries · the "Kai's read" line). Replaces
+ * the old separate hairline ResolvedLedger — one surface, one vocabulary.
  *
- * Outcome chips are the state machine's OWN verdicts (Triggered / Called off /
- * Fizzled), never re-worded into wins. The peak favourable % joins a row only
- * when the track record graded that setup's owning alert; the R figure is
- * derived purely from stored legs — realized peak-R when entry + stop + peak
- * all exist, the planned R:R otherwise, and nothing when neither computes.
+ * HONESTY: the chip is the lifecycle's OWN verdict (Triggered / Called off /
+ * Fizzled), never re-worded into a win. Peak % joins only when the track
+ * record graded the owning alert; the R figure derives purely from stored
+ * legs — realized peak-R when entry + stop + peak all exist, the planned R:R
+ * otherwise, and nothing when neither computes. Deep-links to /alerts/s/[id].
  */
-function ResolvedLedger({
-  setups,
-  track,
-  q,
+function ResolvedSetupRow({
+  s,
+  o,
+  isNew,
+  compact,
 }: {
-  setups: AlertSetup[];
-  track: TrackRecord;
-  q: string;
+  s: AlertSetup;
+  o?: AlertOutcome;
+  isNew?: boolean;
+  compact?: boolean;
 }) {
-  const outcomeByAlert = useMemo(() => {
-    const m = new Map<string, AlertOutcome>();
-    for (const o of track.outcomes) m.set(o.id, o);
-    return m;
-  }, [track]);
+  const meta = SETUP_STATE_META[s.state];
+  const urgency: Urgency = compact ? "low" : "med";
+  const L = readSetupLevels(s.levels);
+  const entry = s.entry;
+  const stop = L.stop ?? L.support;
+  const target = L.resistance;
+  const peakPct = o?.peakPct ?? null;
+  // Realized peak-R only when every leg is genuinely stored.
+  const peakR =
+    entry != null && stop != null && Math.abs(entry - stop) > 1e-9 && o?.peakPrice != null
+      ? Math.abs(o.peakPrice - entry) / Math.abs(entry - stop)
+      : null;
+  const planned = rrOf(entry, stop, target);
 
-  const resolved = useMemo(() => {
-    const needle = q.trim().toUpperCase();
-    return setups
-      .filter(
-        (s) =>
-          s.state === "triggered" || s.state === "invalidated" || s.state === "expired"
-      )
-      .filter((s) => !needle || s.ticker.toUpperCase().includes(needle));
-  }, [setups, q]);
+  const stats: { k: string; v: string; tone?: "up" | "down" }[] = [];
+  if (entry != null) stats.push({ k: "Entry", v: money(entry) });
+  if (peakPct != null)
+    stats.push({ k: "Peak move", v: pctStr(peakPct), tone: peakPct >= 0 ? "up" : "down" });
+  if (peakR != null) stats.push({ k: "Peak R", v: `${peakR.toFixed(1)}R` });
+  else if (planned != null) stats.push({ k: "Planned R:R", v: planned });
 
-  if (resolved.length === 0) return null;
+  const head = s.thesis || setupStateLine(s.state, s.ticker);
 
   return (
-    <section>
-      <BoardEyebrow
-        className="mb-1"
-        meta={
-          <span className="font-mono text-[10px] tabular-nums text-soft/70">
-            {resolved.length} resolved
-          </span>
-        }
-      >
-        Resolved setups
-      </BoardEyebrow>
-      <Card padded={false} className="divide-y divide-sand">
-        {resolved.map((s) => {
-          const meta = SETUP_STATE_META[s.state];
-          const L = readSetupLevels(s.levels);
-          const entry = s.entry;
-          const stop = L.stop ?? L.support;
-          const target = L.resistance;
-          const o = outcomeByAlert.get(s.alert_id);
-          const peakPct = o?.peakPct ?? null;
-          // Realized peak-R only when every leg is genuinely stored.
-          const peakR =
-            entry != null &&
-            stop != null &&
-            Math.abs(entry - stop) > 1e-9 &&
-            o?.peakPrice != null
-              ? Math.abs(o.peakPrice - entry) / Math.abs(entry - stop)
-              : null;
-          const planned = rrOf(entry, stop, target);
-          return (
-            <div key={s.id} className="flex items-center gap-3 px-4 py-3">
-              <CompanyLogo symbol={s.ticker} name={s.ticker} size={28} rounded="rounded-[9px]" />
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                  <span className="font-display text-[13px] font-extrabold tracking-tight text-ink">
-                    ${s.ticker}
-                  </span>
-                  <StatePill tone={meta.tone} label={meta.label} />
-                </div>
-                <p className="mt-0.5 truncate font-mono text-[9.5px] uppercase tracking-[0.1em] text-soft/70">
-                  {new Date(s.created_at).toLocaleDateString(undefined, {
-                    month: "short",
-                    day: "numeric",
-                  })}
-                  {" · resolved "}
-                  {new Date(s.state_entered_at).toLocaleDateString(undefined, {
-                    month: "short",
-                    day: "numeric",
-                  })}
-                </p>
-              </div>
-              <div className="shrink-0 text-right">
-                {peakPct != null && (
-                  <p
-                    className={`font-mono text-[13px] font-semibold tabular-nums ${
-                      peakPct >= 0 ? "text-price-up" : "text-price-down"
-                    }`}
-                  >
-                    {pctStr(peakPct)}
-                  </p>
-                )}
-                {(peakR != null || planned != null) && (
-                  <p className="font-mono text-[9px] uppercase tracking-[0.1em] text-soft/60">
-                    {peakR != null ? `peak ${peakR.toFixed(1)}R` : `plan ${planned}`}
-                  </p>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </Card>
-      <p className="mt-1.5 text-[10.5px] leading-relaxed text-soft/70">
-        Chips are the lifecycle&apos;s own verdicts. Peak % and R figures derive
-        only from stored levels and daily closes.
-      </p>
-    </section>
+    <Link
+      href={`/alerts/s/${encodeURIComponent(s.id)}`}
+      className={`f0-focus f0-press block rounded-[18px] border border-sand bg-card p-[15px] transition hover:border-accent/45 ${
+        compact ? "opacity-70" : ""
+      }`}
+    >
+      <div className="flex items-center gap-2.5">
+        <CompanyLogo
+          symbol={s.ticker}
+          name={s.ticker}
+          size={compact ? 28 : 36}
+          rounded="rounded-[10px]"
+        />
+        <div className="min-w-0 flex-1">
+          <p className="truncate font-display text-[13.5px] font-bold leading-[1.15] text-ink">
+            ${s.ticker}
+          </p>
+          <p className="mt-1 truncate font-mono text-[9.5px] leading-none text-soft/70">
+            Setup resolved · issued{" "}
+            {new Date(s.created_at).toLocaleDateString(undefined, {
+              month: "short",
+              day: "numeric",
+            })}
+          </p>
+        </div>
+        {isNew && <NewMark />}
+        <StatePill tone={meta.tone} label={meta.label} />
+      </div>
+
+      <p className={`mt-3 ${URGENCY_HEAD[urgency]} ${compact ? "truncate" : ""}`}>{head}</p>
+
+      {!compact && <StatGrid className="mt-3" stats={stats} />}
+      {!compact && s.thesis && <KaiRead className="mt-3" text={setupStateLine(s.state, s.ticker)} />}
+    </Link>
   );
 }
 
@@ -2071,17 +2065,14 @@ function TrackRecordTab({
           </p>
           {sampleAlert && (
             <p className="mt-2 max-w-md text-[12px] text-soft/75">
-              See <span className="font-semibold text-ink">Kai Daily</span> for a
-              sample of a tracked setup.
+              See the <span className="font-semibold text-ink">daily brief</span>{" "}
+              on Now for a sample of a tracked setup.
             </p>
           )}
         </Card>
       ) : (
         <>
           <OutcomeShareBoard outcomes={track.outcomes} />
-          {track.outcomes.length > 0 && (
-            <OutcomeSection title="Every Kai Daily setup" outcomes={track.outcomes} />
-          )}
           {observational.length > 0 && <ObservationalCards rows={observational} />}
         </>
       )}
@@ -2108,6 +2099,10 @@ const SHARE_HIT_THRESHOLD = 5;
  */
 function OutcomeShareBoard({ outcomes }: { outcomes: AlertOutcome[] }) {
   const [filter, setFilter] = useState<"all" | "wins" | "losses">("all");
+  // Pagination, not a silent cap: the board IS the record now (the old "full
+  // ledger below" it pointed at re-listed the same outcomes and is deleted),
+  // so every graded outcome must be reachable HERE.
+  const [visible, setVisible] = useState(12);
   const graded = useMemo(() => outcomes.filter((o) => o.peakPct != null), [outcomes]);
   const wins = useMemo(
     () => graded.filter((o) => (o.peakPct ?? 0) >= SHARE_HIT_THRESHOLD),
@@ -2118,7 +2113,7 @@ function OutcomeShareBoard({ outcomes }: { outcomes: AlertOutcome[] }) {
     [graded]
   );
   const shown = filter === "wins" ? wins : filter === "losses" ? losses : graded;
-  const capped = shown.slice(0, 12);
+  const capped = shown.slice(0, visible);
 
   if (graded.length === 0) return null;
 
@@ -2171,70 +2166,14 @@ function OutcomeShareBoard({ outcomes }: { outcomes: AlertOutcome[] }) {
         </div>
       )}
       {shown.length > capped.length && (
-        <p className="mt-2 font-mono text-[10px] uppercase tracking-[0.1em] text-soft/60">
-          +{shown.length - capped.length} more in the full ledger below
-        </p>
+        <button
+          type="button"
+          onClick={() => setVisible((v) => v + 12)}
+          className="f0-focus f0-press mt-3 w-full rounded-full border border-sand bg-card py-2 font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-soft transition hover:border-kai-500/40 hover:text-ink"
+        >
+          Show 12 more · {shown.length - capped.length} left
+        </button>
       )}
-    </section>
-  );
-}
-
-function OutcomeSection({
-  title,
-  icon,
-  outcomes,
-  rank = false,
-}: {
-  title: string;
-  icon?: React.ReactNode;
-  outcomes: AlertOutcome[];
-  rank?: boolean;
-}) {
-  return (
-    <section className="space-y-2">
-      <BoardEyebrow className="mb-1">
-        <span className="inline-flex items-center gap-1.5">
-          {icon} {title}
-        </span>
-      </BoardEyebrow>
-      {outcomes.map((o, i) => {
-        const up = (o.peakPct ?? 0) >= 0;
-        return (
-          <CardLink key={o.id} href={`/research/${encodeURIComponent(o.ticker)}`}>
-            <div className="flex items-center gap-3">
-              {rank && (
-                <span className="w-5 shrink-0 text-center font-mono text-[12px] font-semibold text-gold-700">
-                  #{i + 1}
-                </span>
-              )}
-              <CompanyLogo symbol={o.ticker} name={o.ticker} size={30} rounded="rounded-[9px]" />
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                  <span className="font-display text-[13.5px] font-extrabold tracking-tight text-ink">
-                    ${o.ticker}
-                  </span>
-                  <DirChip dir={o.direction} />
-                </div>
-                {o.setup_label && (
-                  <p className="mt-0.5 truncate text-[11.5px] text-soft/85">{o.setup_label}</p>
-                )}
-              </div>
-              <div className="shrink-0 text-right">
-                <p
-                  className={`font-mono text-[14px] font-semibold tabular-nums ${
-                    up ? "text-price-up" : "text-price-down"
-                  }`}
-                >
-                  {pctStr(o.peakPct)}
-                </p>
-                <p className="font-mono text-[9px] uppercase tracking-[0.1em] text-soft/55">
-                  {o.daysToPeak != null ? `peak in ${o.daysToPeak}d` : "tracking…"}
-                </p>
-              </div>
-            </div>
-          </CardLink>
-        );
-      })}
     </section>
   );
 }
@@ -2375,9 +2314,8 @@ function WatchlistPlays({
   if (watchlistTickers.length === 0) return null;
 
   return (
-    <Card>
-      <BoardEyebrow>Or attach a ready-made watch</BoardEyebrow>
-      <p className="mt-2 text-[12.5px] leading-relaxed text-soft">
+    <FoldCard title="Attach a ready-made watch">
+      <p className="text-[12.5px] leading-relaxed text-soft">
         Pick a stock you follow and a play. Kai watches for that condition and
         tells you when it trips — a plain, rules-based signal to study.
       </p>
@@ -2441,7 +2379,7 @@ function WatchlistPlays({
           {error}
         </p>
       )}
-    </Card>
+    </FoldCard>
   );
 }
 

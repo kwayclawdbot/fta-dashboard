@@ -88,7 +88,7 @@ Future passes update the Status column in place.
 | /discover | 1 | Ratified (concurrent screener/discover pass in flight) |
 | /community (+ /compose, /changed-my-mind) | 1 | Ratified (ClubCommunityScreen, board kit) |
 | /kai | 1 | Ratified |
-| /alerts (+ /alerts/e/[id]) | 1 | Ratified |
+| /alerts (+ /alerts/e/[id], /alerts/s/[id]) | 1 | Ratified · IA rebuilt 2026-08-10 (see "Alerts UX audit") — 3 tabs NOW/HISTORY/RECORD, one card vocabulary, legacy hash remap |
 | /research/[ticker] | 1 | Ratified (ClubRead / ClubStockHead / KaiReportPanel) |
 | /watchlist (+ /watchlist/community) | 1 | Ratified |
 | /u/[username] | 2 | DONE 2026-08-09 — club server-door branch, terminal profile; family render byte-identical |
@@ -145,3 +145,62 @@ Full-app cohesiveness sweep of every club-reachable surface (type · tokens · g
 - States audit — every club-reachable loading/empty/error path checked: all skeletons are card-shaped on tokens, empties are stated FoundingLine/EmptyCard objects, no unstyled fallbacks found.
 - Token audit — zero hardcoded surface hex in club renders (only `text-[#1A1614]`-on-`volt-500` CTA ink, a deliberate mode-invariant constant pairing shared with PillTabs); no `f0-input`/`f0-label` form idioms remain on club-reachable surfaces.
 - Verification — `npx tsc --noEmit` clean; eslint on all touched files: no new errors (3 pre-existing `set-state-in-effect` errors at HEAD in flashcards/CircleRoom/FloatingKaiButton are untouched).
+
+## Alerts UX audit 2026-08-10
+
+Owner verdict on /alerts: "lacking and half put together." Audited as ONE
+experience (AlertsClient ~2,640 lines, page.tsx, e/[id], s/[id],
+components/alerts/*). The screen accreted across at least four passes
+(board-06/18/19 canvas pass · CheatCodeDoors card-language pass ·
+SetupGraphCard/AlertLevelChart graphic pass · ResolvedLedger +
+OutcomeShareBoard pass) and each pass ADDED a surface without retiring the
+one it superseded. Findings:
+
+1. **Redundant nav objects.** Overview drew FOUR NavCards (My watchlist /
+   Kai Watch / Kai Daily / Opinion changes). Two of them were buttons to
+   sibling TABS already on the SegmentedRail directly above; the other two
+   were routes already carried by the inline WatchRail in the header. Every
+   destination existed twice on one screen; the rows were pure filler.
+2. **Two stacked systems in one History tab.** ResolvedLedger (a
+   hairline-separated compact ledger vocabulary) sat ABOVE the chronological
+   event/broadcast feed (the Kai-Watch card anatomy: urgency-tiered heads,
+   StatePill, StatGrid, KaiRead). Same room, two unrelated visual systems,
+   and resolutions were pulled OUT of time while everything else was
+   grouped by day.
+3. **Header duplicated.** WatchHead's "Kai's alerts for you" status band
+   (icon ring · bold line · readings · N-new pill) was re-drawn inside the
+   History tab as a second band ("Everything Kai has sent you") with the
+   same anatomy and the same N-new count — one thought said twice.
+4. **The same setups wore two costumes.** Live Kai Daily setups rendered as
+   SetupGraphCards on Overview AND as PickCards on the Kai Daily tab — two
+   full card vocabularies for one object, one tab apart, with no stated
+   relationship.
+5. **Record tab printed its outcomes twice.** OutcomeShareBoard (share
+   cards, capped at 12, pointing at "the full ledger below") was followed by
+   OutcomeSection re-listing the SAME graded outcomes as CardLink rows — a
+   leftover of the pre-share-card winners/losers sections (its unused
+   `rank`/`icon` props gave the accretion away).
+6. **Five tabs for three thoughts.** Overview/Kai Daily/My watches all
+   answer "what is Kai on right now"; the member's mental model (owner's
+   words) is NOW → HISTORY → RECORD. "My watches" management is a secondary
+   affordance, not a peer destination; Kai Daily is a section, not a room.
+7. **Orphaned/legacy pieces.** board.tsx still exported SectionPills for
+   this screen (superseded by SegmentedRail — still legitimately used by
+   /watchlist/community, kept there); NavCard existed only for the
+   redundant Overview rows; AlertsClient carried DirChip/OutcomeSection row
+   styles outside the ratified card anatomy.
+
+**Rebuild (same date):** three tabs — NOW (SetupGraphCard board → Getting
+Close → compact "Your watches" management with all edit affordances → Daily
+Brief blocks incl. sample/empty state), HISTORY (ONE chronological surface:
+resolved setups + fired events + broadcasts merged, all in the Kai-Watch
+card anatomy, one search, day buckets, resolved rows deep-link /alerts/s/),
+RECORD (track-record stats band on top, then the All/Wins/Losses share-card
+board with show-more instead of a silent cap, then the never-scored
+observational split). Legacy hashes (#overview/#daily/#watch/#live →
+now, #history → history, #track → record, #kai-nl → now + scroll) remap in
+the existing hash effect. NavCards, ResolvedLedger, OutcomeSection, DirChip
+and the duplicate History band deleted; NavCard removed from board.tsx.
+All plumbing preserved: rule toggle/digest/delete writes, alert_prefs
+digest + hub_seen_at, setup follows, strategy tuner, free LockedState +
+adult gate, /e/ and /s/ detail pages, verbatim compliance lines.
