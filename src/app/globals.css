@@ -136,11 +136,19 @@
   --color-green-500: #16A34A;
   --color-green-600: #15803D;
 
-  /* Sora (Bold/ExtraBold) headlines · Inter UI · IBM Plex Mono market data.
-     `font-display` flips to Sora at the token level so every existing headline
-     picks it up with no component edits. */
-  --font-display: var(--font-sora), var(--font-inter), sans-serif;
+  /* Display headlines · Inter UI · IBM Plex Mono market data.
+     `font-display` reads through the RAW --display-stack var (same indirection
+     the color ramps use) because `@theme inline` bakes this token's VALUE into
+     every utility — a direct family here could never be re-mapped per mode.
+     The stack is Sora for family/fta and Inter for club (the owner's board is
+     a neutral grotesk, not Sora's rounded geometry — see the club mode block
+     and .planning/CLUB-TERMINAL-STYLE.md § Typography). */
+  --font-display: var(--display-stack);
   --font-body: var(--font-inter), sans-serif;
+  /* Space Grotesk — loaded (layout.tsx) as the runner-up display grotesk from
+     the club board audit; exposed as a utility (`font-grotesk`) for surfaces
+     that want it explicitly. */
+  --font-grotesk: var(--font-space-grotesk), sans-serif;
   --font-mono: var(--font-plex-mono), ui-monospace, "SFMono-Regular", monospace;
   /* Two HAND faces, two different jobs — both loaded in layout.tsx. Prefer the
      `.script-mark` / `.marker-note` classes further down: they set the family
@@ -163,20 +171,22 @@
      surface flattened into equal-weight boxes. These steps give the
      system real scale contrast so a surface can have ONE dominant voice.
      Line-height tightens and tracking goes negative as size grows (large
-     Sora needs optical compensation); the label step goes the other way.
-     Paired --line-height / --letter-spacing are Tailwind v4 modifiers, so
-     `text-display-1` carries all three values. */
+     display faces need optical compensation); the label step goes the other
+     way. Paired --line-height / --letter-spacing are Tailwind v4 modifiers, so
+     `text-display-1` carries all three values. Tracking reads through raw
+     --track-display-* vars so the club mode (Inter display, tighter headline
+     tracking per the board) can re-tune it without touching family/fta. */
   --text-display-1: 2.75rem;              /* 44px — one per screen, the hero voice */
   --text-display-1--line-height: 0.95;
-  --text-display-1--letter-spacing: -0.03em;
+  --text-display-1--letter-spacing: var(--track-display-1);
 
   --text-display-2: 2rem;                 /* 32px — section leads */
   --text-display-2--line-height: 1;
-  --text-display-2--letter-spacing: -0.025em;
+  --text-display-2--letter-spacing: var(--track-display-2);
 
   --text-display-3: 1.5rem;               /* 24px — object titles */
   --text-display-3--line-height: 1.1;
-  --text-display-3--letter-spacing: -0.02em;
+  --text-display-3--letter-spacing: var(--track-display-3);
 
   /* The small-caps label register that replaces bolded 11px body text as
      the section marker. Positive tracking — the inverse of the display
@@ -200,6 +210,16 @@
 /* ------------------------------------------------------------------ */
 :root {
   color-scheme: light;
+
+  /* DISPLAY STACK — the raw var behind the @theme `--font-display` token
+     (and the --track-display-* headline tracking it pairs with).
+     FAMILY / FTA: Sora, the rounded geometric display face — untouched.
+     CLUB overrides both in its mode block below: the owner's board sets
+     headlines in a tight neutral grotesk, so club resolves to Inter. */
+  --display-stack: var(--font-sora), var(--font-inter), sans-serif;
+  --track-display-1: -0.03em;
+  --track-display-2: -0.025em;
+  --track-display-3: -0.02em;
 
   /* Gold ramp — FAMILY base (constant across themes, as before). Club mode
      remaps these to volt orange; FTA keeps them (gold). */
@@ -361,6 +381,24 @@
 /* Specificity (0,1,0) sits above bare :root (0,0,0) → wins in light.  */
 /* ------------------------------------------------------------------ */
 [data-mode="club"] {
+  /* CLUB TYPE REMAP (2026-08-10) — board-audited. The owner's definitive
+     phone board ("ChatGPT Image Aug 7 2026, 10_07_23 AM") sets every
+     headline ("Good morning, Kway!", "What are you looking for?") in a
+     modern NEUTRAL grotesk — near-vertical terminals, closed double-story
+     'a', straight-tailed 'y', tight headline tracking — an SF-Pro-class
+     face, NOT Sora's rounded geometric letterforms. Of the two loaded
+     candidates, Inter matches the crops (Space Grotesk's clipped terminals
+     and mannered 'g' read more idiosyncratic than the board); see
+     .planning/CLUB-TERMINAL-STYLE.md § Typography. Headline tracking
+     tightens a step: Inter is spaced for UI sizes and needs the extra
+     negative tracking at display sizes to sit as tight as the board.
+     Numerals/prices are untouched — they stay IBM Plex Mono (--font-mono).
+     family/fta never enter this block, so their Sora stack stands. */
+  --display-stack: var(--font-inter), var(--font-space-grotesk), sans-serif;
+  --track-display-1: -0.035em;
+  --track-display-2: -0.03em;
+  --track-display-3: -0.025em;
+
   /* Surfaces — BOARD-EXACT (.planning/design-project-v2, "Cheat Code App
      Light.dc.html"). The page is a warm PAPER off-white #F7F4EF, cards are
      pure white #FFFFFF and the hairline is #E5DFD5. The previous values

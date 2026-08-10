@@ -16,11 +16,34 @@ defaults.
 - Kai/violet `--kai-blue` #7C6BFF (KAI marks, analysis cards, portfolio chart)
 - All colors via semantic tokens so club-light + family stay coherent.
 
-## Typography
-- Display: Sora (700/800) — headlines 24-28px, card titles 16px, tickers 13.5px
+## Typography (revised 2026-08-10 — board letterform audit)
+The board's headlines are NOT Sora. High-zoom crops of "Good morning, Kway!",
+"What are you looking for?", DISCOVER and the KAI MORNING BRIEF read as a
+modern NEUTRAL grotesk (SF-Pro class): closed double-story 'a', single-story
+hooked 'g', straight-tailed 'y', near-vertical terminals, tall x-height,
+tight negative tracking on display sizes. Two candidates were loaded and
+compared against the crops:
+- **Inter — WINNER for display.** Same neutral skeleton as the board:
+  closed apertures, vertical terminals, no mannered details. With tracking
+  tightened a step (−0.035/−0.03/−0.025em on display-1/2/3) it sits on the
+  board's headlines almost 1:1.
+- Space Grotesk — rejected for display: its clipped/angled terminals,
+  ink-trapped joins and idiosyncratic 'g'/'a' read quirkier than anything on
+  the board. It stays loaded (`--font-space-grotesk` / `font-grotesk`) as the
+  club stack's second face.
+
+CLUB stack (scoped `[data-mode="club"]` via `--display-stack` /
+`--track-display-*` in globals.css — family/fta keep Sora untouched):
+- Display: Inter (700/800) — headlines 24-28px, card titles 16px, tickers
+  13.5px; tight tracking per above. `font-display` + `text-display-*`
+  resolve to this automatically; no component edits.
 - Body: Inter — 12-13.5px, line-height 1.5-1.6
 - Data: IBM Plex Mono — prices, %moves, timestamps, countdowns, tabular-nums
+  (numerals NEVER move off mono in the remap)
 - Section labels: WHITE BOLD CAPS ~13px, modest tracking (not tiny gray mono)
+- Inline chip-row prefixes (filter groups, KAI INTERPRETATION-style): small
+  soft-caps ~10.5px, +0.1em tracking, soft gray — inline before the chips,
+  never a stacked form label
 
 ## Geometry & rhythm
 - Cards rounded 14-16px, interior padding 14-16px — text NEVER flush to edges
@@ -82,7 +105,7 @@ Future passes update the Status column in place.
 | /chart | 2 | DONE 2026-08-09 — club terminal chrome (semantic orange Load CTA, white-caps TRY label, flat dark chart well); board-03 composition + chart engine untouched; family classes byte-identical |
 | /simulator (+ /lessons, /simbot) | 2 | DONE 2026-08-09 — club terminal chrome (mono eyebrows, caps masts, white-caps rail labels, pattern ledger in dark card); engine/tick loop/persistence, scenario scoring/XP, simbot bridge + free/kid walls untouched; family/teen render byte-identical |
 | /games (+ candle-battle, trend-or-trap) | 2 | DONE 2026-08-09 — club terminal hub (caps mast, dark record card, white-caps "The reps", terminal hub cards, no pips); game engines untouched (candle-battle/trend-or-trap pages mount engines only), free-tier lock + server gate untouched; family/kid render byte-identical |
-| /screener | 2 | DONE 2026-08-10 — filter panel rebuilt as a terminal object (dark 16px card, white-caps group heads, raised-well pills w/ mono numeric labels, --m800 threshold wells w/ mono values, dark-well selects); full typography audit (mono for values/counts only, body for prose, no ledger/underline/gold-hover vocabulary); sort/pagination/save-flow in the same well vocabulary; filters logic, AI parse, saved screens + 20-cap, free meter, FTA gate, kid redirect all byte-preserved; shared surface, tokens carry family/club |
+| /screener | 2 | DONE 2026-08-10 (rev 2, chip-first) — filter card + label-over-control form skeleton KILLED; filters are now flowing chip rows straight on the page (board's KAI INTERPRETATION vocabulary): soft-caps inline group prefixes (UNIVERSE · SIZE · PRICE + MOVEMENT · ACADEMY), self-describing raised-well pills, pill-wrapped native selects for long lists (quiet while "Any", accent-lit when live), compact rounded-full mono pill-wells for thresholds with identity-carrying mono affixes ($, 1D %, VOL ≥ ×, RSI ≤); disclosure is an inline caps control, no card chrome; re-verified under the club Inter display stack — masthead/headline/labels read like the board; filters logic, AI parse, saved screens + 20-cap, free meter, FTA gate, kid redirect all byte-preserved; shared surface, tokens carry family/club |
 | /circles (+ [slug]) | 2 | TODO — light board-16 kit; rings anatomy already established |
 | /club-index | 2 | DONE 2026-08-09 — terminal caps masthead; ratified ClubIndex ledger untouched |
 | /vip-room | 2 | DONE 2026-08-09 — audited against the law, no deviations: tokens only, board-11 pricing card, accent pill CTAs, mono timestamps, uneven rhythm; commercial copy byte-preserved, gate untouched |

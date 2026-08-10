@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import {
   Sora,
   Inter,
+  Space_Grotesk,
   IBM_Plex_Mono,
   Kaushan_Script,
   Caveat,
@@ -18,9 +19,11 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 //   no cookie → legacy stored-or-light (auth/public/first visit).
 const THEME_INIT = `(function(){try{var k=(document.cookie.match(/(?:^|; )cc-appearance=([^;]*)/)||[])[1];var p=localStorage.getItem('fta-theme');var sys=window.matchMedia('(prefers-color-scheme: dark)').matches;var d;if(k==='family'){d=false;}else if(k==='club'){d=p?(p==='dark'||(p==='system'&&sys)):true;}else{d=p==='dark'||(p==='system'&&sys);}var t=d?'dark':'light';document.documentElement.setAttribute('data-theme',t);var c=d?(k==='club'?'#050505':'#17120B'):'#F7F4EF';document.querySelectorAll('meta[name=\\"theme-color\\"]').forEach(function(m){m.setAttribute('content',c);});}catch(e){}})();`;
 
-// Sora — geometric display face (Bold/ExtraBold headlines) for the Club system.
-// Mapped to --font-display at the token level so every existing headline flips
-// to Sora with no component edits.
+// Sora — geometric display face (Bold/ExtraBold headlines) for the FAMILY/FTA
+// display register. Mapped through --display-stack (globals.css) so every
+// existing headline picks it up with no component edits. CLUB mode remaps the
+// same stack to Inter (owner's mockup board, 2026-08-10): the board's
+// headlines are a neutral grotesk, not Sora's rounded geometry.
 const sora = Sora({
   variable: "--font-sora",
   subsets: ["latin"],
@@ -29,6 +32,17 @@ const sora = Sora({
 
 const inter = Inter({
   variable: "--font-inter",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+});
+
+// Space Grotesk — the other neutral-grotesk candidate audited against the
+// club board's headline crops. Inter won the display slot (see
+// .planning/CLUB-TERMINAL-STYLE.md § Typography for the letterform evidence);
+// Space Grotesk stays loaded as --font-space-grotesk / the club stack's
+// second face so display strings never fall back past the grotesk register.
+const spaceGrotesk = Space_Grotesk({
+  variable: "--font-space-grotesk",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
 });
@@ -111,7 +125,7 @@ export default function RootLayout({
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT }} />
       </head>
-      <body className={`${sora.variable} ${inter.variable} ${plexMono.variable} ${kaushan.variable} ${caveat.variable} antialiased`}>
+      <body className={`${sora.variable} ${inter.variable} ${spaceGrotesk.variable} ${plexMono.variable} ${kaushan.variable} ${caveat.variable} antialiased`}>
         <ThemeManager />
         <MotionProvider>{children}</MotionProvider>
         <SpeedInsights />

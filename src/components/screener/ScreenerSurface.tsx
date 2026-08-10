@@ -398,7 +398,8 @@ interface SavedScreen {
  * family/club-light paper; there is no mode branch anywhere in this file.
  *
  * THE ANATOMY, TOP TO BOTTOM:
- *   masthead        "DISCOVER" caps wordmark · Sora headline · mono coverage
+ *   masthead        "DISCOVER" caps wordmark · display headline (mode-mapped:
+ *                   Inter on club, Sora on family/fta) · mono coverage
  *                   line (the screener is filed as a TAB of Discover)
  *   tabs            For you · Screener · Trending — violet (--kai-blue) 2px
  *                   underline on the live tab
@@ -408,7 +409,7 @@ interface SavedScreen {
  *                   the live one takes the brand-accent pill
  *   results header  "14 MATCHES · SORTED BY CLUB SIGNAL" in mono caps, with
  *                   "Save screen" as the solid orange pill CTA
- *   results         quiet rounded ticker rows: 32px logo tile · bold Sora
+ *   results         quiet rounded ticker rows: 32px logo tile · bold display-face
  *                   ticker · real-closes line sparkline · mono price ·
  *                   green/red day move · signal chip
  *   conviction      two cards side by side — "Club's most bullish" on a
@@ -935,7 +936,7 @@ export default function ScreenerSurface({
     <div className={embedded ? "" : "mx-auto max-w-3xl px-4 pb-24 sm:px-6"}>
       {/* ── Masthead + tabs ────────────────────────────────────────────────
           The screener is filed as a TAB of Discover, so the standalone route
-          wears Discover's terminal head — caps wordmark, Sora headline, mono
+          wears Discover's terminal head — caps wordmark, display headline, mono
           coverage line, violet-underline tabs with SCREENER live. Embedded
           inside Discover the host already draws all of it. */}
       {!embedded && (
@@ -1142,25 +1143,25 @@ export default function ScreenerSurface({
           </div>
         )}
 
-        {/* Filter panel — the terminal object: a rounded-[16px] dark card
-            (border-sand bg-card) with 16px interior padding, white-caps group
-            heads inside, raised-well pills for options and --m800 wells for
-            thresholds (never cards-in-cards, never a ruled paper form). */}
-        <BoardCard radius={16} className="mt-6 overflow-hidden">
+        {/* Filters — CHIP-FIRST, straight on the page (board vocabulary: the
+            KAI INTERPRETATION chip rows / Quick-start chips). No card, no
+            form skeleton: the disclosure is an inline white-caps control and
+            the open state pours flowing chip-group rows onto the page —
+            each group a wrap of pills behind a small soft-caps inline
+            prefix. */}
+        <div className="mt-6">
           <button
             onClick={() => setFiltersOpen((v) => !v)}
             aria-expanded={filtersOpen}
-            className="f0-focus flex w-full items-center justify-between gap-2 px-4 py-3 text-left"
+            className="f0-focus inline-flex items-center gap-2 text-left text-[13px] font-bold uppercase tracking-[0.06em] text-ink"
           >
-            <span className="flex items-center gap-2 text-[13px] font-bold uppercase tracking-[0.06em] text-ink">
-              <SlidersHorizontal className="h-4 w-4 text-soft" />
-              Filters
-              {chips.length > 0 && (
-                <span className="font-mono text-[11px] font-bold tabular-nums text-gold-700">
-                  {chips.length}
-                </span>
-              )}
-            </span>
+            <SlidersHorizontal className="h-4 w-4 text-soft" />
+            Filters
+            {chips.length > 0 && (
+              <span className="font-mono text-[11px] font-bold tabular-nums text-gold-700">
+                {chips.length}
+              </span>
+            )}
             <ChevronDown
               className={`h-4 w-4 text-soft transition-transform ${filtersOpen ? "rotate-180" : ""}`}
             />
@@ -1173,19 +1174,17 @@ export default function ScreenerSurface({
                 exit={{ height: 0, opacity: 0 }}
                 className="overflow-hidden"
               >
-                <div className="border-t border-sand px-4">
-                  <FilterPanel
-                    isFTA={isFTA}
-                    isKid={isKid}
-                    exchanges={exchanges}
-                    value={custom}
-                    patch={patchFilter}
-                  />
-                </div>
+                <FilterPanel
+                  isFTA={isFTA}
+                  isKid={isKid}
+                  exchanges={exchanges}
+                  value={custom}
+                  patch={patchFilter}
+                />
               </m.div>
             )}
           </AnimatePresence>
-        </BoardCard>
+        </div>
 
         {/* Active filter chips — one accent pill per live filter ("Tech ✕"),
             with a quiet raised-well "+ Filter" that opens the panel above. */}
@@ -1382,7 +1381,7 @@ export default function ScreenerSurface({
         </AnimatePresence>
 
         {/* ── Results — the established ticker-row anatomy, at every
-            breakpoint: real logo tile · bold Sora ticker · line sparkline
+            breakpoint: real logo tile · bold display-face ticker · line sparkline
             (real 1m closes; month drift colors the curve) · mono price ·
             green/red day move · signal chip. The extra readings the terminal
             keeps (1m/3m/vol/cap/RSI) sit as mono type on a second line inside
@@ -1745,7 +1744,7 @@ function SaveScreenControl({
  * RESULT ROW — one match, one quiet rounded row in the established ticker-row
  * anatomy (the same object MarketPulse / the watchlist movers draw):
  *
- *   [32px logo] TICKER (Sora bold)   [1m line sparkline]   $173.42   [78]
+ *   [32px logo] TICKER (display bold)   [1m line sparkline]   $173.42   [78]
  *               Company name (soft)                         +4.7%
  *
  * The sparkline is REAL daily closes off /api/market/bars (see RowSpark); the
@@ -2003,29 +2002,35 @@ function emaTrendLabel(t: NonNullable<CustomFilters["emaTrend"]>): string {
 }
 
 /* ============================================================================
- * FILTER PANEL — a TERMINAL OBJECT, not a reskinned form.
+ * FILTERS — CHIP-FIRST, the board's own vocabulary. Not a form. Not a card.
  *
- * The first restyle kept the old form-on-paper idiom here — `f0-ledger` ruled
- * rows, underlined display-font selects, underlined number fields with gold
- * hover rules — which made the dominant block on the surface the one thing
- * still reading as the old app. That vocabulary is gone. The panel now speaks
- * the same language as Discover's KAI INTERPRETATION card and the WellChips
- * around it:
+ * The previous pass was still a form skeleton wearing terminal paint: a card
+ * with white-caps group heads, then a stacked label-over-control Field for
+ * every filter. The owner's board never draws that object. Its filter
+ * language is the KAI INTERPRETATION row — a small soft-caps prefix INLINE,
+ * then pills flowing after it ("Market Cap < $20B", "Industry: AI") — and
+ * the Quick-start chip rows. So the panel is now exactly that:
  *
- *   · the panel lives in the dark card (rounded-[16px] border-sand bg-card,
- *     16px interior padding) the disclosure above already draws
- *   · each filter GROUP sits under a white-caps 12.5px group head
- *   · every one-of-N option is the established raised-well pill — an --m800
- *     well at rest, the accent-tinted pill when live, MONO when the label is
- *     a numeric value ($50M+)
- *   · every range/threshold input is a dark well (--m800, sand hairline,
- *     accent hairline on focus) holding a MONO tabular value with its unit
- *   · long lists (exchange / sector / subsector) are the same dark well
- *     around a native select
+ *   · each filter GROUP is ONE flowing wrap of pills (ChipRow) with the
+ *     group name as a small soft-caps inline prefix — no stacked labels,
+ *     no card, no ruled rows; the chips sit straight on the page
+ *   · one-of-N options are the established raised-well pills (Chip) — an
+ *     --m800 well at rest, the accent-tinted pill when live, MONO when the
+ *     label is a numeric value ($50M+); labels are self-describing
+ *     ("Any size", "Any trend") because nothing stacks above them anymore
+ *   · the long lists (exchange / sector / subsector) are PILL-TRIGGERED
+ *     choices via the surface's existing primitive — the sort control's
+ *     pill-wrapped native select — so the closed state reads as a chip
+ *     ("Any sector" quiet · "Technology" accent-lit) and the open state is
+ *     the platform sheet/popover for free
+ *   · numeric thresholds are compact MONO pill-wells (WellNum) inline —
+ *     rounded-full --m800 wells, mono soft-caps unit affixes carrying the
+ *     filter's identity ("$", "1D %", "VOL ≥ ×", "RSI ≤"), em-dash
+ *     placeholder for unset, accent hairline on focus
  *
  * There is no Apply button because there never was one — every control writes
- * CustomFilters live, and the accent-pill active-filters row below the card is
- * the standing record of what is applied.
+ * CustomFilters live, and the accent-pill active-filters row below is the
+ * standing record of what is applied.
  *
  * Every filter that existed still exists and still writes the SAME key on
  * CustomFilters, so the preset buttons, the active-filter chips and the
@@ -2076,206 +2081,186 @@ function FilterPanel({
   const subsectorOptions = selectedSector ? SUBSECTORS[selectedSector] : [];
 
   return (
-    <div className="pb-4 pt-3.5">
-      {/* ── What to look at ─────────────────────────────────────────────── */}
-      <FieldGroup label="Universe" first>
-        <Field label="Exchange">
-          <WellSelect
-            ariaLabel="Exchange"
-            value={value.exchange ?? ""}
-            onChange={(v) => patch({ exchange: v || null })}
-          >
-            <option value="">Any exchange</option>
-            {exchanges.map((e) => (
-              <option key={e} value={e}>
-                {formatExchange(e)}
-              </option>
-            ))}
-          </WellSelect>
-        </Field>
-
-        <Field label="Security type">
-          <Chip active={!value.type} onClick={() => patch({ type: null })}>
-            Stocks + ETFs
-          </Chip>
-          <Chip
-            active={value.type === "common"}
-            onClick={() => patch({ type: "common" })}
-          >
-            Common stocks
-          </Chip>
-          <Chip active={value.type === "etf"} onClick={() => patch({ type: "etf" })}>
-            ETFs
-          </Chip>
-        </Field>
-
-        <Field label="Sector">
-          <WellSelect
-            ariaLabel="Sector"
-            value={value.sector ?? ""}
-            /* Changing the sector clears any subsector chosen under the old one. */
-            onChange={(v) => patch({ sector: v || null, subsector: null })}
-          >
-            <option value="">Any sector</option>
-            {SECTORS.map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
-            ))}
-          </WellSelect>
-        </Field>
-
-        <Field
-          label="Subsector"
-          hint={selectedSector ? undefined : "Choose a sector first"}
+    <div className="flex flex-col gap-[13px] pb-1 pt-3.5">
+      {/* ── What to look at — one flowing chip row ──────────────────────── */}
+      <ChipRow label="Universe">
+        <PillSelect
+          ariaLabel="Exchange"
+          live={!!value.exchange}
+          value={value.exchange ?? ""}
+          onChange={(v) => patch({ exchange: v || null })}
         >
-          <WellSelect
-            ariaLabel="Subsector"
-            value={value.subsector ?? ""}
-            onChange={(v) => patch({ subsector: v || null })}
-            disabled={!selectedSector}
+          <option value="">Any exchange</option>
+          {exchanges.map((e) => (
+            <option key={e} value={e}>
+              {formatExchange(e)}
+            </option>
+          ))}
+        </PillSelect>
+
+        <PillSelect
+          ariaLabel="Sector"
+          live={!!value.sector}
+          value={value.sector ?? ""}
+          /* Changing the sector clears any subsector chosen under the old one. */
+          onChange={(v) => patch({ sector: v || null, subsector: null })}
+        >
+          <option value="">Any sector</option>
+          {SECTORS.map((s) => (
+            <option key={s} value={s}>
+              {s}
+            </option>
+          ))}
+        </PillSelect>
+
+        <PillSelect
+          ariaLabel="Subsector"
+          live={!!value.subsector}
+          value={value.subsector ?? ""}
+          onChange={(v) => patch({ subsector: v || null })}
+          disabled={!selectedSector}
+        >
+          {/* The old stacked hint ("Choose a sector first") now lives IN the
+              pill — the disabled chip says why it's asleep. */}
+          <option value="">
+            {selectedSector ? "Any subsector" : "Pick a sector first"}
+          </option>
+          {subsectorOptions.map((s) => (
+            <option key={s} value={s}>
+              {s}
+            </option>
+          ))}
+        </PillSelect>
+
+        <Chip active={!value.type} onClick={() => patch({ type: null })}>
+          Stocks + ETFs
+        </Chip>
+        <Chip
+          active={value.type === "common"}
+          onClick={() => patch({ type: "common" })}
+        >
+          Common stocks
+        </Chip>
+        <Chip active={value.type === "etf"} onClick={() => patch({ type: "etf" })}>
+          ETFs
+        </Chip>
+      </ChipRow>
+
+      {/* ── Market cap floor — self-describing pills, mono values ───────── */}
+      <ChipRow label="Size">
+        <Chip active={value.minMcap == null} onClick={() => patch({ minMcap: null })}>
+          Any size
+        </Chip>
+        {MCAP_STEPS.map((s) => (
+          <Chip
+            key={s.label}
+            mono
+            active={value.minMcap === s.value}
+            onClick={() => patch({ minMcap: s.value })}
           >
-            <option value="">{selectedSector ? "Any subsector" : "—"}</option>
-            {subsectorOptions.map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
-            ))}
-          </WellSelect>
-        </Field>
-
-        <Field label="Company size" hint="Smallest market cap you'll look at">
-          <Chip active={value.minMcap == null} onClick={() => patch({ minMcap: null })}>
-            Any
+            {s.label}
           </Chip>
-          {MCAP_STEPS.map((s) => (
-            <Chip
-              key={s.label}
-              mono
-              active={value.minMcap === s.value}
-              onClick={() => patch({ minMcap: s.value })}
-            >
-              {s.label}
-            </Chip>
-          ))}
-        </Field>
-      </FieldGroup>
+        ))}
+      </ChipRow>
 
-      {/* ── How it is trading ───────────────────────────────────────────── */}
-      <FieldGroup label="Price and movement">
-        <Field label="Share price" hint="Leave either side blank for no limit">
+      {/* ── How it is trading — mono pill-wells in the flow. Each well's
+             soft-caps mono affix carries its identity ($, the window, VOL)
+             now that nothing stacks above it. ─────────────────────────── */}
+      <ChipRow label="Price + movement">
+        <WellNum
+          ariaLabel="Minimum price"
+          prefix="$"
+          value={value.minPrice}
+          onChange={(v) => patch({ minPrice: v })}
+        />
+        <span className="text-[11px] text-soft">to</span>
+        <WellNum
+          ariaLabel="Maximum price"
+          prefix="$"
+          value={value.maxPrice}
+          onChange={(v) => patch({ maxPrice: v })}
+        />
+        {MOVE_FIELDS.map((f) => (
           <WellNum
-            ariaLabel="Minimum price"
-            prefix="$"
-            value={value.minPrice}
-            onChange={(v) => patch({ minPrice: v })}
+            key={f.key}
+            ariaLabel={`Minimum ${f.label} move percent`}
+            prefix={f.label}
+            suffix="%"
+            width="w-12"
+            value={value[f.key]}
+            onChange={(v) => patch({ [f.key]: v } as Partial<CustomFilters>)}
           />
-          <span className="text-[11.5px] text-soft">to</span>
-          <WellNum
-            ariaLabel="Maximum price"
-            prefix="$"
-            value={value.maxPrice}
-            onChange={(v) => patch({ maxPrice: v })}
-          />
-        </Field>
-
-        <Field label="Minimum move" hint="Percent gained over each window">
-          {MOVE_FIELDS.map((f) => (
-            <WellNum
-              key={f.key}
-              ariaLabel={`Minimum ${f.label} move percent`}
-              prefix={f.label}
-              suffix="%"
-              width="w-12"
-              value={value[f.key]}
-              onChange={(v) => patch({ [f.key]: v } as Partial<CustomFilters>)}
-            />
-          ))}
-        </Field>
-
-        <Field label="Relative volume" hint="Times its own 20-day average">
-          <WellNum
-            ariaLabel="Minimum relative volume"
-            prefix="≥"
-            suffix="×"
-            value={value.minVolRatio}
-            onChange={(v) => patch({ minVolRatio: v })}
-          />
-        </Field>
-      </FieldGroup>
+        ))}
+        <WellNum
+          ariaLabel="Minimum relative volume"
+          prefix="vol ≥"
+          suffix="×"
+          value={value.minVolRatio}
+          onChange={(v) => patch({ minVolRatio: v })}
+        />
+      </ChipRow>
 
       {/* ── Advanced (FTA) ──────────────────────────────────────────────── */}
       {isFTA ? (
-        <FieldGroup label="Advanced — Academy">
-          <Field label="RSI" hint="Low reads oversold, high reads strong">
-            <WellNum
-              ariaLabel="RSI at or below"
-              prefix="≤"
-              width="w-10"
-              value={value.rsiMax}
-              onChange={(v) => patch({ rsiMax: v })}
-            />
-            <WellNum
-              ariaLabel="RSI at or above"
-              prefix="≥"
-              width="w-10"
-              value={value.rsiMin}
-              onChange={(v) => patch({ rsiMin: v })}
-            />
-          </Field>
-
-          <Field label="Opening gap" hint="Percent away from yesterday's close">
-            <WellNum
-              ariaLabel="Gap up at or above percent"
-              prefix="Up ≥"
-              suffix="%"
-              width="w-12"
-              value={value.minGap}
-              onChange={(v) => patch({ minGap: v })}
-            />
-            <WellNum
-              ariaLabel="Gap down at or below percent"
-              prefix="Down ≤"
-              suffix="%"
-              width="w-12"
-              value={value.maxGap}
-              onChange={(v) => patch({ maxGap: v })}
-            />
-          </Field>
-
-          <Field label="Moving-average trend">
-            <Chip active={!value.emaTrend} onClick={() => patch({ emaTrend: null })}>
-              Any trend
-            </Chip>
-            {EMA_OPTIONS.map((o) => (
-              <Chip
-                key={o.value}
-                active={value.emaTrend === o.value}
-                onClick={() => patch({ emaTrend: o.value })}
-              >
-                {o.label}
-              </Chip>
-            ))}
-          </Field>
-
-          <Field label="52-week position" hint="Where it sits in its own year">
+        <ChipRow label="Academy">
+          <WellNum
+            ariaLabel="RSI at or below"
+            prefix="rsi ≤"
+            width="w-10"
+            value={value.rsiMax}
+            onChange={(v) => patch({ rsiMax: v })}
+          />
+          <WellNum
+            ariaLabel="RSI at or above"
+            prefix="rsi ≥"
+            width="w-10"
+            value={value.rsiMin}
+            onChange={(v) => patch({ rsiMin: v })}
+          />
+          <WellNum
+            ariaLabel="Gap up at or above percent"
+            prefix="gap up ≥"
+            suffix="%"
+            width="w-12"
+            value={value.minGap}
+            onChange={(v) => patch({ minGap: v })}
+          />
+          <WellNum
+            ariaLabel="Gap down at or below percent"
+            prefix="gap down ≤"
+            suffix="%"
+            width="w-12"
+            value={value.maxGap}
+            onChange={(v) => patch({ maxGap: v })}
+          />
+          <Chip active={!value.emaTrend} onClick={() => patch({ emaTrend: null })}>
+            Any trend
+          </Chip>
+          {EMA_OPTIONS.map((o) => (
             <Chip
-              active={!!value.nearHigh}
-              onClick={() => patch({ nearHigh: value.nearHigh ? null : true })}
+              key={o.value}
+              active={value.emaTrend === o.value}
+              onClick={() => patch({ emaTrend: o.value })}
             >
-              Near the high
+              {o.label}
             </Chip>
-            <Chip
-              active={!!value.nearLow}
-              onClick={() => patch({ nearLow: value.nearLow ? null : true })}
-            >
-              Near the low
-            </Chip>
-          </Field>
-        </FieldGroup>
+          ))}
+          <Chip
+            active={!!value.nearHigh}
+            onClick={() => patch({ nearHigh: value.nearHigh ? null : true })}
+          >
+            Near 52w high
+          </Chip>
+          <Chip
+            active={!!value.nearLow}
+            onClick={() => patch({ nearLow: value.nearLow ? null : true })}
+          >
+            Near 52w low
+          </Chip>
+        </ChipRow>
       ) : (
         !isKid && (
-          <div className="mt-6 flex items-start gap-2 border-t border-sand pt-4 text-[12.5px] leading-snug text-soft">
+          <div className="mt-1 flex items-start gap-2 text-[12.5px] leading-snug text-soft">
             <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-gold-600" />
             <span>
               Advanced technical filters — RSI, moving-average trend, gap and 52-week
@@ -2291,102 +2276,91 @@ function FilterPanel({
   );
 }
 
-/* ── Filter group ──────────────────────────────────────────────────────────
-   A white-caps group head (the terminal's section-label register — never a
-   tiny gray mono mark) over its filters. The law's uneven rhythm: 24px
-   between groups, 12px head→content, 18px between filters inside a group. */
-function FieldGroup({
+/* ── Chip row ──────────────────────────────────────────────────────────────
+   One filter GROUP as one flowing wrap: a small soft-caps prefix INLINE (the
+   board's KAI INTERPRETATION register — soft gray, +0.1em tracking, sitting
+   in the flow before its chips, never stacked above them), then the pills
+   and wells wrapping like the board's chip rows. role="group" keeps the
+   prefix announced with the controls it introduces. */
+function ChipRow({
   label,
-  first = false,
   children,
 }: {
   label: string;
-  first?: boolean;
   children: React.ReactNode;
 }) {
   return (
-    <section className={first ? "" : "mt-6"}>
-      <h3 className="text-[12.5px] font-bold uppercase tracking-[0.08em] text-ink">
-        {label}
-      </h3>
-      <div className="mt-3 flex flex-col gap-[18px]">{children}</div>
-    </section>
-  );
-}
-
-/* ── One filter ────────────────────────────────────────────────────────────
-   Body-register label (Inter — never the old display-font row heads), a soft
-   plain-English hint, then the controls: pills and wells in a wrap. */
-function Field({
-  label,
-  hint,
-  children,
-}: {
-  label: string;
-  hint?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div>
-      <p className="text-[12px] font-semibold leading-none text-ink">{label}</p>
-      {hint && <p className="mt-1 text-[11.5px] leading-snug text-soft">{hint}</p>}
-      <div
-        role="group"
-        aria-label={label}
-        className="mt-2 flex flex-wrap items-center gap-2"
+    <div
+      role="group"
+      aria-label={label}
+      className="flex flex-wrap items-center gap-2"
+    >
+      <span
+        aria-hidden
+        className="mr-0.5 shrink-0 text-[10.5px] font-bold uppercase tracking-[0.1em] text-soft"
       >
-        {children}
-      </div>
+        {label}
+      </span>
+      {children}
     </div>
   );
 }
 
-/* ── Dark-well select ──────────────────────────────────────────────────────
-   The long lists (exchange / sector / subsector): a native select sunk into
-   an --m800 well behind a sand hairline that warms to the accent on focus —
-   the same well the pills and number fields sit in, so the whole panel is
-   one material. */
-function WellSelect({
+/* ── Pill-triggered choice ─────────────────────────────────────────────────
+   The long lists (exchange / sector / subsector) as the surface's existing
+   pill-select primitive (the sort control's anatomy): a rounded-full chip
+   wrapping a native select, so the closed state reads as one more pill in
+   the flow — quiet --m800 well while "Any", the accent-tinted pill once a
+   choice is live — and tapping it opens the platform's own popover/sheet. */
+function PillSelect({
   value,
   onChange,
   children,
+  live,
   disabled = false,
   ariaLabel,
 }: {
   value: string;
   onChange: (v: string) => void;
   children: React.ReactNode;
+  live: boolean;
   disabled?: boolean;
   ariaLabel: string;
 }) {
   return (
     <span
-      className={`relative inline-flex max-w-full items-center rounded-[10px] border border-sand bg-midnight-800 transition-colors focus-within:border-accent ${
-        disabled ? "opacity-45" : ""
-      }`}
+      className={`relative inline-flex max-w-full shrink-0 items-center rounded-full border transition-colors focus-within:border-accent ${
+        live
+          ? "border-accent/60 bg-accent/12"
+          : "border-sand bg-midnight-800"
+      } ${disabled ? "opacity-45" : ""}`}
     >
       <select
         aria-label={ariaLabel}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         disabled={disabled}
-        className="f0-focus max-w-[15rem] cursor-pointer appearance-none truncate rounded-[10px] bg-transparent py-[7px] pl-3 pr-8 text-[12.5px] font-semibold text-ink outline-none disabled:cursor-not-allowed"
+        className={`f0-focus max-w-[13rem] cursor-pointer appearance-none truncate rounded-full bg-transparent py-[6px] pl-3 pr-7 text-[11.5px] font-semibold outline-none disabled:cursor-not-allowed ${
+          live ? "text-gold-700" : "text-soft"
+        }`}
       >
         {children}
       </select>
       <ChevronDown
         aria-hidden
-        className="pointer-events-none absolute right-2.5 h-3.5 w-3.5 text-soft"
+        className="pointer-events-none absolute right-2.5 h-3 w-3 text-soft"
       />
     </span>
   );
 }
 
-/* ── Dark-well number field ────────────────────────────────────────────────
-   Every screener threshold is a market number, so the value is MONO and
-   tabular inside its own --m800 well; the mono affix carries the unit ($, %,
-   ×, the window) so the field itself stays a bare number, and an unset filter
-   shows the honest em-dash placeholder. Focus warms the hairline to accent. */
+/* ── Mono pill-well ────────────────────────────────────────────────────────
+   Every screener threshold is a market number, so it renders as a compact
+   MONO pill-well in the chip flow: a rounded-full --m800 well, the mono
+   soft-caps affix carrying the filter's identity and unit ($, the window,
+   VOL ≥, RSI ≤) so the field itself stays a bare tabular number, and an
+   unset filter shows the honest em-dash placeholder. Focus warms the
+   hairline to accent, same as every pill around it. */
 function WellNum({
   value,
   onChange,
@@ -2403,7 +2377,7 @@ function WellNum({
   ariaLabel: string;
 }) {
   return (
-    <label className="inline-flex items-baseline gap-1.5 rounded-[10px] border border-sand bg-midnight-800 px-2.5 py-[7px] transition-colors focus-within:border-accent">
+    <label className="inline-flex shrink-0 items-baseline gap-1.5 rounded-full border border-sand bg-midnight-800 px-3 py-[6px] transition-colors focus-within:border-accent">
       {prefix && (
         <span
           aria-hidden
@@ -2418,7 +2392,7 @@ function WellNum({
         value={value ?? ""}
         onChange={(e) => onChange(e.target.value === "" ? null : Number(e.target.value))}
         placeholder="—"
-        className={`${width} bg-transparent text-right font-mono text-[13px] font-semibold tabular-nums text-ink outline-none placeholder:text-soft/60`}
+        className={`${width} bg-transparent text-right font-mono text-[12.5px] font-semibold tabular-nums text-ink outline-none placeholder:text-soft/60`}
       />
       {suffix && (
         <span
