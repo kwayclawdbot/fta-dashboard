@@ -32,6 +32,8 @@ import { createClient } from "@/lib/supabase/client";
 import CompanyLogo from "@/components/fic/CompanyLogo";
 import SetAlertButton from "@/components/alerts/SetAlertButton";
 import PickCard from "@/components/alerts/PickCard";
+import SetupGraphCard from "@/components/alerts/SetupGraphCard";
+import ShareOutcomeCard from "@/components/alerts/ShareOutcomeCard";
 import { FoundingState } from "@/components/family/canvas";
 import KaiWatch from "@/components/kai/KaiWatch";
 import WatchRail from "@/components/watch/WatchRail";
@@ -320,7 +322,7 @@ export default function AlertsClient({
               rules={activeRules}
               stateByRule={stateByRule}
               detailByRule={detailByRule}
-              followedSetups={followedSetups}
+              setups={setups}
               priceMap={priceMap}
               watchlistCount={watchlistTickers.length}
               activeCount={activeRules.length}
@@ -356,6 +358,8 @@ export default function AlertsClient({
             <HistoryTab
               events={events}
               broadcasts={broadcasts}
+              setups={setups}
+              track={trackRecord}
               priceMap={priceMap}
               hubSeenAt={hubSeenAt}
               lastChecked={lastChecked}
@@ -457,7 +461,7 @@ function OverviewTab({
   rules,
   stateByRule,
   detailByRule,
-  followedSetups,
+  setups,
   priceMap,
   watchlistCount,
   activeCount,
@@ -468,7 +472,7 @@ function OverviewTab({
   rules: AlertRule[];
   stateByRule: Map<string, WatchState>;
   detailByRule: Map<string, WatchDetail>;
-  followedSetups: AlertSetup[];
+  setups: AlertSetup[];
   priceMap: Record<string, number>;
   watchlistCount: number;
   activeCount: number;
@@ -487,9 +491,13 @@ function OverviewTab({
     return rows.sort((a, b) => (b.detail?.progress ?? 0) - (a.detail?.progress ?? 0));
   }, [rules, stateByRule, detailByRule]);
 
+  // The visual board's rows: every LIVE Kai Daily setup (developing lifecycle
+  // state), each drawn as a graphic card — real month chart + stored level
+  // lines + state chip + distance-to-trigger. Followed or not, if it is live
+  // it is on the board; nothing is cherry-picked.
   const liveSetups = useMemo(
-    () => followedSetups.filter((s) => SETUP_STATE_META[s.state]?.developing),
-    [followedSetups]
+    () => setups.filter((s) => SETUP_STATE_META[s.state]?.developing),
+    [setups]
   );
 
   const lead = developing[0] ?? null;
@@ -497,6 +505,28 @@ function OverviewTab({
 
   return (
     <div className="space-y-6">
+      {/* ── LIVE SETUPS — the overview leads with the graphic board ─────── */}
+      {liveSetups.length > 0 && (
+        <section>
+          <BoardEyebrow
+            accent
+            className="mb-2"
+            meta={
+              <span className="font-mono text-[10px] tabular-nums text-soft/70">
+                {liveSetups.length} live
+              </span>
+            }
+          >
+            Live setups
+          </BoardEyebrow>
+          <div className="grid gap-3 lg:grid-cols-2">
+            {liveSetups.map((s) => (
+              <SetupGraphCard key={s.id} s={s} current={priceMap[s.ticker] ?? null} />
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* ── the board's four rows ───────────────────────────────────────── */}
       <div className="space-y-2">
         <NavCard
@@ -583,14 +613,6 @@ function OverviewTab({
         </section>
       )}
 
-      {liveSetups.length > 0 && (
-        <section className="space-y-2">
-          <BoardEyebrow className="mb-1">Setups you&apos;re following</BoardEyebrow>
-          {liveSetups.map((s) => (
-            <LiveSetupCard key={s.id} s={s} current={priceMap[s.ticker] ?? null} />
-          ))}
-        </section>
-      )}
     </div>
   );
 }
@@ -760,68 +782,6 @@ function DevelopingRow({
           {detail.metric}
         </p>
       )}
-    </Card>
-  );
-}
-
-/**
- * CheatCodeDoors' WATCHING lifecycle row: ticker + state chip, the 5px
- * lifecycle-position bar, a one-line status, "Kai: …" read, then the setup's
- * stat rows. Every number comes off alert_setups (entry / levels.stop /
- * levels.resistance); R:R is derived from those stored legs and simply not
- * drawn when a leg is missing.
- */
-function LiveSetupCard({ s, current }: { s: AlertSetup; current: number | null }) {
-  const meta = SETUP_STATE_META[s.state];
-  const L = readSetupLevels(s.levels);
-  const entry = s.entry;
-  const stop = L.stop ?? L.support;
-  const target = L.resistance;
-  const rr = rrOf(entry, stop, target);
-  const stats: { k: string; v: string; tone?: "up" | "down" }[] = [];
-  if (entry != null) stats.push({ k: "Entry", v: money(entry) });
-  if (stop != null) stats.push({ k: "Stop", v: money(stop), tone: "down" });
-  if (target != null) stats.push({ k: "Target", v: money(target), tone: "up" });
-  if (rr != null) stats.push({ k: "R:R", v: rr });
-  const px = current ?? s.snapshot_price;
-
-  return (
-    <Card className="rounded-[17px]">
-      <div className="flex items-center gap-3">
-        <CompanyLogo symbol={s.ticker} name={s.ticker} size={38} rounded="rounded-[11px]" />
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-            <span className="font-display text-[14px] font-extrabold leading-[1.15] tracking-tight text-ink">
-              ${s.ticker}
-            </span>
-            <DirChip dir={s.direction} />
-          </div>
-          {px != null && (
-            <p className="mt-1 font-mono text-[11px] font-medium leading-none text-soft">
-              {money(px)}
-            </p>
-          )}
-        </div>
-        <StatePill tone={meta.tone} label={meta.label} live={meta.live} />
-      </div>
-
-      <LifecycleBar
-        className="mt-3"
-        pct={SETUP_BAR[s.state]}
-        tone={meta.tone}
-        label={`Setup lifecycle: ${meta.label}`}
-      />
-
-      <p className="mt-2.5 text-[12px] leading-[1.45] text-ink">
-        {setupStateLine(s.state, s.ticker)}
-      </p>
-      {s.thesis && (
-        <p className="mt-2 text-[11.5px] leading-[1.45] text-kai-blue">
-          Kai: {s.thesis}
-        </p>
-      )}
-
-      <StatGrid className="mt-3" stats={stats} />
     </Card>
   );
 }
@@ -1040,14 +1000,6 @@ const WATCH_BAR: Record<WatchState, number> = {
   invalidated: 100,
   earnings_wait: 50,
 };
-const SETUP_BAR: Record<SetupState, number> = {
-  waiting: 18,
-  confirmed: 78,
-  triggered: 100,
-  invalidated: 100,
-  expired: 30,
-};
-
 /** Bar position: the cron's own 0..1 progress when recorded, else the state's
  *  fixed ladder position — a position, never a probability. */
 function barPct(progress: number | null | undefined, fallback: number): number {
@@ -1623,6 +1575,8 @@ type FeedRow =
 function HistoryTab({
   events,
   broadcasts,
+  setups,
+  track,
   priceMap,
   hubSeenAt,
   lastChecked,
@@ -1630,6 +1584,8 @@ function HistoryTab({
 }: {
   events: AlertEvent[];
   broadcasts: TradeAlert[];
+  setups: AlertSetup[];
+  track: TrackRecord;
   priceMap: Record<string, number>;
   hubSeenAt: string | null;
   lastChecked: string | null;
@@ -1691,6 +1647,13 @@ function HistoryTab({
         />
       </div>
 
+      {/* ── RESOLVED SETUPS — the clean outcome ledger ──────────────────────
+          Every Kai Daily setup whose lifecycle CLOSED (level hit / stopped /
+          expired) as one hairline-separated ledger: the machine's own verdict
+          chip, the peak favourable move where the record graded it, and an
+          R figure only when the stored legs genuinely carry one. */}
+      <ResolvedLedger setups={setups} track={track} q={q} />
+
       {filtered.length === 0 ? (
         <Card className="px-4 py-5">
           <p className="font-display text-[16px] font-extrabold text-ink">
@@ -1727,6 +1690,122 @@ function HistoryTab({
         ))
       )}
     </div>
+  );
+}
+
+/**
+ * RESOLVED LEDGER — closed alert_setups lifecycles as one clean ledger.
+ *
+ * Outcome chips are the state machine's OWN verdicts (Triggered / Called off /
+ * Fizzled), never re-worded into wins. The peak favourable % joins a row only
+ * when the track record graded that setup's owning alert; the R figure is
+ * derived purely from stored legs — realized peak-R when entry + stop + peak
+ * all exist, the planned R:R otherwise, and nothing when neither computes.
+ */
+function ResolvedLedger({
+  setups,
+  track,
+  q,
+}: {
+  setups: AlertSetup[];
+  track: TrackRecord;
+  q: string;
+}) {
+  const outcomeByAlert = useMemo(() => {
+    const m = new Map<string, AlertOutcome>();
+    for (const o of track.outcomes) m.set(o.id, o);
+    return m;
+  }, [track]);
+
+  const resolved = useMemo(() => {
+    const needle = q.trim().toUpperCase();
+    return setups
+      .filter(
+        (s) =>
+          s.state === "triggered" || s.state === "invalidated" || s.state === "expired"
+      )
+      .filter((s) => !needle || s.ticker.toUpperCase().includes(needle));
+  }, [setups, q]);
+
+  if (resolved.length === 0) return null;
+
+  return (
+    <section>
+      <BoardEyebrow
+        className="mb-1"
+        meta={
+          <span className="font-mono text-[10px] tabular-nums text-soft/70">
+            {resolved.length} resolved
+          </span>
+        }
+      >
+        Resolved setups
+      </BoardEyebrow>
+      <Card padded={false} className="divide-y divide-sand">
+        {resolved.map((s) => {
+          const meta = SETUP_STATE_META[s.state];
+          const L = readSetupLevels(s.levels);
+          const entry = s.entry;
+          const stop = L.stop ?? L.support;
+          const target = L.resistance;
+          const o = outcomeByAlert.get(s.alert_id);
+          const peakPct = o?.peakPct ?? null;
+          // Realized peak-R only when every leg is genuinely stored.
+          const peakR =
+            entry != null &&
+            stop != null &&
+            Math.abs(entry - stop) > 1e-9 &&
+            o?.peakPrice != null
+              ? Math.abs(o.peakPrice - entry) / Math.abs(entry - stop)
+              : null;
+          const planned = rrOf(entry, stop, target);
+          return (
+            <div key={s.id} className="flex items-center gap-3 px-4 py-3">
+              <CompanyLogo symbol={s.ticker} name={s.ticker} size={28} rounded="rounded-[9px]" />
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                  <span className="font-display text-[13px] font-extrabold tracking-tight text-ink">
+                    ${s.ticker}
+                  </span>
+                  <StatePill tone={meta.tone} label={meta.label} />
+                </div>
+                <p className="mt-0.5 truncate font-mono text-[9.5px] uppercase tracking-[0.1em] text-soft/70">
+                  {new Date(s.created_at).toLocaleDateString(undefined, {
+                    month: "short",
+                    day: "numeric",
+                  })}
+                  {" · resolved "}
+                  {new Date(s.state_entered_at).toLocaleDateString(undefined, {
+                    month: "short",
+                    day: "numeric",
+                  })}
+                </p>
+              </div>
+              <div className="shrink-0 text-right">
+                {peakPct != null && (
+                  <p
+                    className={`font-mono text-[13px] font-semibold tabular-nums ${
+                      peakPct >= 0 ? "text-price-up" : "text-price-down"
+                    }`}
+                  >
+                    {pctStr(peakPct)}
+                  </p>
+                )}
+                {(peakR != null || planned != null) && (
+                  <p className="font-mono text-[9px] uppercase tracking-[0.1em] text-soft/60">
+                    {peakR != null ? `peak ${peakR.toFixed(1)}R` : `plan ${planned}`}
+                  </p>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </Card>
+      <p className="mt-1.5 text-[10.5px] leading-relaxed text-soft/70">
+        Chips are the lifecycle&apos;s own verdicts. Peak % and R figures derive
+        only from stored levels and daily closes.
+      </p>
+    </section>
   );
 }
 
@@ -1992,21 +2071,7 @@ function TrackRecordTab({
         </Card>
       ) : (
         <>
-          {track.winners.length > 0 && (
-            <OutcomeSection
-              title="Furthest ahead"
-              icon={<TrendingUp className="h-3.5 w-3.5 text-price-up" />}
-              outcomes={track.winners}
-              rank
-            />
-          )}
-          {track.losers.length > 0 && (
-            <OutcomeSection
-              title="Didn't work"
-              icon={<TrendingDown className="h-3.5 w-3.5 text-price-down" />}
-              outcomes={track.losers}
-            />
-          )}
+          <OutcomeShareBoard outcomes={track.outcomes} />
           {track.outcomes.length > 0 && (
             <OutcomeSection title="Every Kai Daily setup" outcomes={track.outcomes} />
           )}
@@ -2021,6 +2086,89 @@ function TrackRecordTab({
         graded outcomes. Past performance never guarantees future results.
       </p>
     </div>
+  );
+}
+
+/** Mirrors HIT_THRESHOLD in src/lib/alerts/history.ts — "worked" = peak ≥ +5%. */
+const SHARE_HIT_THRESHOLD = 5;
+
+/**
+ * WINNERS & LOSERS — every graded outcome as a branded share card (prior art:
+ * the Kai dashboard's win cards, adapted to the club terminal law). The
+ * honesty law is structural: the default view is ALL graded outcomes, wins
+ * and losses interleaved newest-first; the chips filter, they never hide the
+ * other side's existence (both counts stay printed on the rail).
+ */
+function OutcomeShareBoard({ outcomes }: { outcomes: AlertOutcome[] }) {
+  const [filter, setFilter] = useState<"all" | "wins" | "losses">("all");
+  const graded = useMemo(() => outcomes.filter((o) => o.peakPct != null), [outcomes]);
+  const wins = useMemo(
+    () => graded.filter((o) => (o.peakPct ?? 0) >= SHARE_HIT_THRESHOLD),
+    [graded]
+  );
+  const losses = useMemo(
+    () => graded.filter((o) => (o.peakPct ?? 0) < SHARE_HIT_THRESHOLD),
+    [graded]
+  );
+  const shown = filter === "wins" ? wins : filter === "losses" ? losses : graded;
+  const capped = shown.slice(0, 12);
+
+  if (graded.length === 0) return null;
+
+  const chips: { id: "all" | "wins" | "losses"; label: string; count: number }[] = [
+    { id: "all", label: "All", count: graded.length },
+    { id: "wins", label: "Wins", count: wins.length },
+    { id: "losses", label: "Losses", count: losses.length },
+  ];
+
+  return (
+    <section>
+      <BoardEyebrow className="mb-2">Winners &amp; losers</BoardEyebrow>
+      <div className="flex flex-wrap items-center gap-1.5">
+        {chips.map((c) => {
+          const on = filter === c.id;
+          return (
+            <button
+              key={c.id}
+              onClick={() => setFilter(c.id)}
+              className={`f0-focus f0-press inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12px] font-semibold transition ${
+                on
+                  ? "border-kai-500 bg-kai-500/10 text-kai-600"
+                  : "border-sand text-soft hover:border-kai-500/40"
+              }`}
+            >
+              {c.label}
+              <span className="font-mono text-[10px] tabular-nums opacity-70">{c.count}</span>
+            </button>
+          );
+        })}
+      </div>
+      <p className="mt-2 max-w-lg text-[11.5px] leading-relaxed text-soft/80">
+        Every graded setup gets a card — the ones that worked and the ones that
+        didn&apos;t, in the open. &ldquo;Worked&rdquo; means the peak favourable
+        move reached +{SHARE_HIT_THRESHOLD}%.
+      </p>
+      {capped.length === 0 ? (
+        <p className="mt-3 font-mono text-[10px] uppercase tracking-[0.14em] text-soft">
+          Nothing in this bucket yet
+        </p>
+      ) : (
+        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+          {capped.map((o) => (
+            <ShareOutcomeCard
+              key={o.id}
+              o={o}
+              won={(o.peakPct ?? 0) >= SHARE_HIT_THRESHOLD}
+            />
+          ))}
+        </div>
+      )}
+      {shown.length > capped.length && (
+        <p className="mt-2 font-mono text-[10px] uppercase tracking-[0.1em] text-soft/60">
+          +{shown.length - capped.length} more in the full ledger below
+        </p>
+      )}
+    </section>
   );
 }
 

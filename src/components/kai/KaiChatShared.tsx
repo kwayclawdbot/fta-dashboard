@@ -15,6 +15,8 @@ import {
   Brain,
   RotateCw,
   X,
+  Star,
+  ArrowRight,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { getClubTier, type FamilyTier } from "@/lib/tier";
@@ -31,6 +33,9 @@ import {
   HintReopen,
 } from "@/components/hints/useNewMemberHints";
 import type { MarketBar } from "@/lib/market/client";
+import type { Letter } from "@/lib/research/grades";
+import { letterColor } from "@/components/research/GradeVisuals";
+import CompanyLogo from "@/components/fic/CompanyLogo";
 
 interface ChartBlock {
   kind: "chart";
@@ -43,7 +48,32 @@ interface NewsBlock {
   symbol: string;
   items: { title: string; url: string; publisher: string | null; published: string | null }[];
 }
-type Block = ChartBlock | NewsBlock;
+/** The grade_ticker artifact — the research scorecard as a graded ticker card. */
+interface GradeSubscore {
+  dimension: string;
+  letter: Letter | null;
+  score: number | null;
+  sufficient: boolean;
+}
+interface GradeBlock {
+  kind: "grade";
+  ticker: string;
+  name: string | null;
+  /** Signed display grade derived from the engine's real score, e.g. "A-", "B+". */
+  grade: string;
+  /** Base engine letter — drives the chip tint. */
+  letter: Letter | null;
+  /** The engine's compliance verdict: Strong / Solid / Mixed / Weak. */
+  label: string | null;
+  score: number | null;
+  graded: number;
+  subscores: GradeSubscore[];
+  price: number | null;
+  changePct: number | null;
+  reasons: string[];
+  asOf: string | null;
+}
+type Block = ChartBlock | NewsBlock | GradeBlock;
 
 interface Msg {
   id?: string;
@@ -172,6 +202,8 @@ function starterChips(profile: KaiProfile): { label: string; prompt: string }[] 
       },
       { label: "Chart", prompt: "Show me Nvidia's 1-year chart" },
       { label: "Analyze", prompt: "Read the setup on NVDA" },
+      /* Seeds the grade_ticker artifact — the research scorecard as a card. */
+      { label: "Grade NVDA", prompt: "Grade NVDA — what does the research scorecard say?" },
     ];
   }
   return [
@@ -184,6 +216,8 @@ function starterChips(profile: KaiProfile): { label: string; prompt: string }[] 
     },
     { label: "Chart", prompt: "Show me Nvidia's 1-year chart" },
     { label: "Analyze", prompt: "What are Costco's risks?" },
+    /* Seeds the grade_ticker artifact — the research scorecard as a card. */
+    { label: "Grade NVDA", prompt: "Grade NVDA — what does the research scorecard say?" },
   ];
 }
 
@@ -205,14 +239,260 @@ function followUpChips(profile: KaiProfile): { label: string; prompt: string }[]
   ];
 }
 
+/* ───────────────────── Graded ticker card (grade_ticker) ───────────────────── */
+
+/**
+ * The grade chip's tint. GRADE COLOUR IS SEMANTIC, NOT ADVICE: the A range
+ * rides the price-up token, D–F ride price-down, and the B/C middle keeps the
+ * scorecard's own amber/soft letter colours (GradeVisuals — the one shared
+ * letter→colour mapping). Null (ungraded) is the scorecard's slate.
+ */
+function gradeChipColor(letter: Letter | null): string {
+  if (letter === "A") return "var(--color-price-up)";
+  if (letter === "D" || letter === "F") return "var(--color-price-down)";
+  return letterColor(letter);
+}
+
+/**
+ * The member's family context, asked for ONCE per session (module cache, the
+ * CompanyLogo pattern) — it only exists to decide whether the card may carry a
+ * Watch control. No family = no control, never a dead button (screener star law).
+ */
+let famCtxPromise: Promise<{ familyId: string | null; userId: string | null }> | null = null;
+function getFamilyCtx(supabase: ReturnType<typeof createClient>) {
+  if (famCtxPromise) return famCtxPromise;
+  famCtxPromise = (async () => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return { familyId: null, userId: null };
+    const { data } = await supabase
+      .from("profiles")
+      .select("family_id")
+      .eq("id", user.id)
+      .maybeSingle();
+    return { familyId: (data?.family_id as string | null) ?? null, userId: user.id };
+  })();
+  return famCtxPromise;
+}
+
+/**
+ * "Watch" — the family_watchlist add, the screener action row's own write
+ * (family_id + champion_id + snapshot price/at, status "watch"), state-
+ * reflecting: already on the list renders as "Watching", never a re-add.
+ */
+function GradeWatchAction({
+  ticker,
+  name,
+  price,
+}: {
+  ticker: string;
+  name: string | null;
+  price: number | null;
+}) {
+  const supabase = createClient();
+  const [ctx, setCtx] = useState<{ familyId: string | null; userId: string | null } | null>(null);
+  const [starred, setStarred] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const c = await getFamilyCtx(supabase);
+      if (cancelled) return;
+      if (c.familyId) {
+        const { data } = await supabase
+          .from("family_watchlist")
+          .select("id")
+          .eq("family_id", c.familyId)
+          .eq("ticker", ticker)
+          .limit(1);
+        if (cancelled) return;
+        setStarred((data || []).length > 0);
+      }
+      setCtx(c);
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ticker]);
+
+  if (!ctx || !ctx.familyId || !ctx.userId) return null;
+  const { familyId, userId } = ctx;
+
+  async function add() {
+    if (starred || busy) return;
+    setBusy(true);
+    const { error } = await supabase.from("family_watchlist").insert({
+      family_id: familyId,
+      company_name: name || ticker,
+      ticker,
+      status: "watch",
+      champion_id: userId,
+      snapshot_price: price,
+      snapshot_at: new Date().toISOString(),
+    });
+    if (!error) setStarred(true);
+    setBusy(false);
+  }
+
+  return (
+    <button
+      type="button"
+      disabled={starred || busy}
+      onClick={add}
+      aria-label={starred ? `${ticker} is on your watchlist` : `Add ${ticker} to your watchlist`}
+      className={`f0-focus f0-press inline-flex items-center gap-1.5 rounded-full border px-[11px] py-[6px] text-[11.5px] font-semibold transition-colors ${
+        starred
+          ? "border-accent/60 bg-accent/12 text-gold-700"
+          : "border-sand bg-midnight-800 text-ink hover:border-accent"
+      } disabled:cursor-default`}
+    >
+      <Star
+        aria-hidden
+        className={`h-3.5 w-3.5 ${starred ? "fill-current text-gold-700" : "text-soft"}`}
+      />
+      {starred ? "Watching" : busy ? "Adding…" : "Watch"}
+    </button>
+  );
+}
+
+/**
+ * GradedTickerCard — the research scorecard as a chat artifact. Terminal card
+ * anatomy: real logo tile · ticker + name in display · the GRADE as a big mono
+ * chip (semantic grade tint — a grade chip, never advice) · subscore mini-bars
+ * for the four dimensions the engine really grades · mono price/move · the
+ * engine's own one-line reasons · "Watch" + "Open research →" actions. Every
+ * number on the card came out of the real grades engine or the delayed quote —
+ * an insufficient dimension shows "—" and no bar, never a fabricated read.
+ */
+function GradedTickerCard({ block }: { block: GradeBlock }) {
+  const color = gradeChipColor(block.letter);
+  const up = (block.changePct ?? 0) >= 0;
+  return (
+    <div className="mt-4 rounded-[14px] border border-sand bg-card p-[14px]">
+      {/* Head — logo · name/ticker/price · the grade chip */}
+      <div className="flex items-center gap-3">
+        <CompanyLogo symbol={block.ticker} name={block.name} size={40} rounded="rounded-full" />
+        <div className="min-w-0 flex-1">
+          <p className="truncate font-display text-[14.5px] font-bold leading-tight tracking-tight text-ink">
+            {block.name || block.ticker}
+          </p>
+          <p className="mt-[3px] flex items-baseline gap-2">
+            <span className="font-mono text-[11px] uppercase text-soft">{block.ticker}</span>
+            {block.price != null && (
+              <span className="font-mono text-[13px] font-semibold tabular-nums text-ink">
+                ${block.price.toFixed(2)}
+              </span>
+            )}
+            {block.changePct != null && (
+              <span
+                className={`font-mono text-[11.5px] font-semibold tabular-nums ${
+                  up ? "text-price-up" : "text-price-down"
+                }`}
+              >
+                {up ? "+" : ""}
+                {block.changePct.toFixed(2)}%
+              </span>
+            )}
+          </p>
+        </div>
+        <div className="flex shrink-0 flex-col items-center gap-1">
+          <span
+            className="flex h-12 min-w-12 items-center justify-center rounded-[12px] px-1.5 font-mono text-[20px] font-bold leading-none tabular-nums"
+            style={{
+              color,
+              background: `color-mix(in srgb, ${color} 13%, transparent)`,
+              border: `1px solid color-mix(in srgb, ${color} 40%, transparent)`,
+            }}
+            aria-label={`Research grade ${block.grade}`}
+          >
+            {block.grade}
+          </span>
+          {block.label && (
+            <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-soft">
+              {block.label}
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Subscore mini-bars — the four dimensions, each on ITS letter colour;
+          an insufficient dimension states "—" and draws no bar. */}
+      <div className="mt-3.5 grid grid-cols-2 gap-x-5 gap-y-2.5">
+        {block.subscores.map((s) => {
+          const subColor = letterColor(s.letter);
+          return (
+            <div key={s.dimension}>
+              <div className="flex items-baseline justify-between">
+                <span className="font-mono text-[9.5px] uppercase tracking-[0.12em] text-soft">
+                  {s.dimension}
+                </span>
+                <span
+                  className="font-mono text-[10.5px] font-bold tabular-nums"
+                  style={{ color: s.letter ? subColor : undefined }}
+                >
+                  {s.letter ?? "—"}
+                </span>
+              </div>
+              <div className="mt-1 h-[4px] overflow-hidden rounded-full bg-sand">
+                {s.score != null && (
+                  <div
+                    className="h-full rounded-full"
+                    style={{ width: `${Math.max(4, Math.min(100, s.score))}%`, background: subColor }}
+                  />
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* One-line reasons — the engine's own plain-English check sentences. */}
+      {block.reasons.length > 0 && (
+        <ul className="mt-3 space-y-1">
+          {block.reasons.map((r, i) => (
+            <li key={i} className="flex gap-1.5 text-[12px] leading-snug text-soft">
+              <span aria-hidden className="mt-[7px] h-[3px] w-[3px] shrink-0 rounded-full bg-soft/60" />
+              <span className="min-w-0">{r}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {/* Compliance — the grade is the app's educational research grade. */}
+      <p className="mt-3 font-mono text-[9.5px] uppercase leading-relaxed tracking-[0.12em] text-soft/65">
+        Educational research grade · {block.graded} of 4 areas graded · not a recommendation
+      </p>
+
+      {/* Actions — Watch (family_watchlist add) · Open research deep link. */}
+      <div className="mt-3.5 flex flex-wrap items-center gap-2">
+        <GradeWatchAction ticker={block.ticker} name={block.name} price={block.price} />
+        <Link
+          href={`/research/${encodeURIComponent(block.ticker)}`}
+          className="f0-focus ml-auto inline-flex items-center gap-1 rounded text-[11.5px] font-bold text-gold-700"
+        >
+          Open research
+          <ArrowRight aria-hidden className="h-3.5 w-3.5" />
+        </Link>
+      </div>
+    </div>
+  );
+}
+
 /**
  * An evidence block Kai attaches to a turn. Charts and headlines are EVIDENCE,
  * not cards — they hang off the entry on a rule, at the same reading measure as
  * the prose, so the conversation stays one column of attributed material. The
  * chart caption is the board's bold in-card chart title ("NVDA vs AMD
- * Performance (2Y)").
+ * Performance (2Y)"). The graded ticker card is the one true CARD artifact in
+ * the set — a scorecard object, so it renders as a bounded terminal card.
  */
 function BlockView({ block }: { block: Block }) {
+  if (block.kind === "grade") {
+    return <GradedTickerCard block={block} />;
+  }
   if (block.kind === "chart") {
     return (
       <figure className="f0-rule-top mt-4 pt-3">

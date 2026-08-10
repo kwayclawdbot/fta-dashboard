@@ -283,6 +283,31 @@ export const GET_DAILY_CHANGES_TOOL = {
   },
 } as const;
 
+/**
+ * grade_ticker — the research scorecard as a CHAT ARTIFACT. Computes the app's
+ * REAL educational research grade (the same Lane-9 engine + server aggregate
+ * the /research/[ticker] scorecard uses: A–F on Value / Growth / Health /
+ * Momentum, rule-based and explainable) and renders a graded ticker card in the
+ * reply. Available to EVERY profile like the other education tools (the grade
+ * register is Strong/Solid/Mixed/Weak — education, never advice; the kid
+ * profile's no-trade-framing audience rules still govern how it's discussed).
+ * Honest insufficiency is preserved end-to-end: no computable grade → the tool
+ * says so and NO card renders — a grade is never invented.
+ */
+export const GRADE_TICKER_TOOL = {
+  name: "grade_ticker",
+  description:
+    "Compute the platform's educational research grade for one ticker — the exact A–F scorecard from its /research page: an overall letter grade plus Value / Growth / Health / Momentum subscores, each rule-based and explainable, with plain-English strengths and weaknesses. Call this whenever a member asks for your opinion on a ticker, for trade ideas, 'what should I buy', 'is X any good', or to compare names — then teach off what the checks show. A graded ticker card is rendered for the member automatically. Grades are the app's educational research grades, NEVER a buy/sell recommendation. If the engine can't grade a name (not enough published financials), the result says so — report that honestly and never invent a grade.",
+  input_schema: {
+    type: "object",
+    additionalProperties: false,
+    properties: {
+      symbol: { type: "string", description: "Ticker symbol, e.g. NVDA" },
+    },
+    required: ["symbol"],
+  },
+} as const;
+
 /* ─────────────────────── Kai Watch — chat alert tools ─────────────────────── */
 /**
  * Conversational alert customization (LANE R4, chat surface). Three tools let an
@@ -399,7 +424,13 @@ export const LIST_MY_ALERTS_TOOL = {
  * covers teens, who must never get alert tools.
  */
 export function chatToolsForProfile(profile: KaiProfile, opts: { alerts?: boolean } = {}) {
-  const base = profile === "club" ? [...CHAT_TOOLS, GET_DAILY_CHANGES_TOOL] : [...CHAT_TOOLS];
+  // grade_ticker rides with the education tools on EVERY profile (the grade
+  // register is itself education — Strong/Solid/Mixed/Weak, honest-insufficiency,
+  // no advice); club additionally gets the actionable daily-changes briefing.
+  const base =
+    profile === "club"
+      ? [...CHAT_TOOLS, GRADE_TICKER_TOOL, GET_DAILY_CHANGES_TOOL]
+      : [...CHAT_TOOLS, GRADE_TICKER_TOOL];
   if (opts.alerts) {
     return [...base, PROPOSE_ALERT_RULE_TOOL, CREATE_ALERT_RULE_TOOL, LIST_MY_ALERTS_TOOL];
   }
@@ -537,7 +568,9 @@ export function buildChatSystemPrompt(
 
 ${audience}
 
-You are "Ask Kai" — a conversational research assistant inside the app. Use your tools to ground answers in real (delayed ~15 min) market data: get_quote, get_bars, company_info, ticker_search, news_headlines. When price history helps, call get_bars — an interactive chart appears in your reply automatically, so refer to it naturally ("here's the last year") rather than reading numbers aloud. When you cite news, call news_headlines — the sources appear as link cards.
+You are "Ask Kai" — a conversational research assistant inside the app. Use your tools to ground answers in real (delayed ~15 min) market data: get_quote, get_bars, company_info, ticker_search, news_headlines, grade_ticker. When price history helps, call get_bars — an interactive chart appears in your reply automatically, so refer to it naturally ("here's the last year") rather than reading numbers aloud. When you cite news, call news_headlines — the sources appear as link cards.
+
+When a member asks whether a stock is "good", asks for ideas of what to buy, or wants your opinion on a ticker, call grade_ticker: it computes the platform's educational research scorecard (A–F on Value, Growth, Health and Momentum) and a graded ticker card appears in your reply automatically. Walk through what the checks show as education — the grade is a study aid for understanding a business, never a recommendation to buy or sell anything. If the engine can't grade a name (not enough published financials), say so honestly — never invent a grade.
 
 Answer in clean, well-structured Markdown. Keep answers focused. When you decline an advice question, be brief and warm, then offer what you CAN help study.
 
@@ -561,11 +594,12 @@ HOW YOU WORK — the club register (direct, concrete, actionable ANALYSIS; every
 - Lead with the read. Give concrete technical read-outs: where price is now, the key support and resistance levels you can see in the bars data, the RSI(14) state (overbought/oversold/neutral), whether price sits above or below its 20- and 50-day EMAs, distance from the 52-week high/low, and volume vs. its average. Name the actual numbers.
 - Talk STRUCTURE the way an analyst teaches structure: where a setup would trigger (the entry zone), where the read is wrong (the invalidation level), and what the reward-to-risk looks like AS A FRAMEWORK for understanding the chart — never as a call to place a trade. Say "the structure triggers above X; it's invalidated below Y; that frames roughly A-to-B reward-to-risk," not "buy here."
 - Surface candidates. When asked "what's setting up" or "names matching X today," use get_daily_changes and screener framing to point at tickers fitting a profile (momentum, volume surge, near highs, oversold bounce) and state plainly what each one shows.
+- Ground ticker opinions in the research grades. When asked for trade ideas, "what should I buy," or a view on a name, call grade_ticker — the platform's A–F research scorecard (Value / Growth / Health / Momentum) renders as a graded ticker card automatically. Read the grade like an analyst: what each dimension's checks actually show, where the read is strong and where it's thin. The grade is the club's educational scorecard, never a recommendation (the floor above is absolute). If a name can't be graded — not enough published financials — say so plainly; no invented grades, ever.
 - Answer "what changed today?" as a briefing: call get_daily_changes to pull the real deltas — price move, volume vs. average, gaps, 52-week events, fresh news — for a ticker or the member's watchlist, and tell them what actually moved and why it matters.
 - Have a view. You can say a chart looks strong or weak, extended or basing, that a level matters, that a move looks like distribution or accumulation — direct, opinionated reads grounded in the data. You just never convert a view into personalized advice or a performance promise (that's the floor above, and it is absolute).
 - Stay honest. Strong-looking charts fail; say so. Real edges are probabilistic — describe confirmation and invalidation, never sell certainty. Present the other side of your own read.
 
-Use your tools to ground everything: get_quote, get_bars (an interactive chart renders automatically — refer to it naturally), company_info, ticker_search, news_headlines, and get_daily_changes for deltas and briefings. Call get_bars whenever levels or price action are in play so your levels are real, not remembered.
+Use your tools to ground everything: get_quote, get_bars (an interactive chart renders automatically — refer to it naturally), company_info, ticker_search, news_headlines, grade_ticker for the research scorecard, and get_daily_changes for deltas and briefings. Call get_bars whenever levels or price action are in play so your levels are real, not remembered.
 
 Answer in clean, tight Markdown — numbers first, no filler, no reflexive hedging. If a request crosses into personalized advice, decline in one line and immediately give the analytical version instead.
 

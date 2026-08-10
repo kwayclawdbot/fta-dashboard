@@ -24,6 +24,8 @@ import {
   KAI_MEMORY_MAX_CHARS,
 } from "@/lib/kai/persona";
 import { beltForXp } from "@/lib/belts";
+import { getResearchPayload } from "@/lib/research/aggregate";
+import type { Letter } from "@/lib/research/grades";
 import { serviceClient } from "@/lib/server/membership";
 import { logClubEvent } from "@/lib/club/track";
 import type { Register } from "@/lib/register";
@@ -41,7 +43,7 @@ interface AnthMsg {
   content: string | unknown[];
 }
 interface Block {
-  kind: "chart" | "news";
+  kind: "chart" | "news" | "grade";
   [k: string]: unknown;
 }
 
@@ -350,6 +352,135 @@ async function runListMyAlerts(ctx: ToolCtx): Promise<{ result: string }> {
   };
 }
 
+/* ───────────────────────── grade_ticker (research scorecard) ───────────────────────── */
+
+/**
+ * The grades engine's fixed letter bands (grades.ts scoreToLetter). A signed
+ * display grade ("A-", "B+") is DERIVED from the engine's own 0–100 score —
+ * the score's tercile within its letter band — so the chip stays a pure,
+ * deterministic read of the real grade, never a second opinion. F carries no
+ * sign (there is no F+).
+ */
+const LETTER_BANDS: Record<Letter, [number, number]> = {
+  A: [80, 100],
+  B: [65, 79],
+  C: [45, 64],
+  D: [25, 44],
+  F: [0, 24],
+};
+
+function signedGrade(letter: Letter, score: number): string {
+  if (letter === "F") return "F";
+  const [lo, hi] = LETTER_BANDS[letter];
+  const pos = (score - lo) / (hi - lo);
+  if (pos >= 2 / 3) return `${letter}+`;
+  if (pos < 1 / 3) return `${letter}-`;
+  return letter;
+}
+
+/**
+ * grade_ticker — the app's REAL research grade as a chat artifact. Reuses the
+ * EXACT server path the /research/[ticker] scorecard reads (getResearchPayload
+ * → cached fundamentals + live screener momentum + medians → computeGrades),
+ * so the card in chat and the scorecard on the research page can never
+ * disagree. Honest insufficiency is preserved: an ungradeable name returns a
+ * plain-language result and NO render block — a grade is never invented.
+ */
+async function runGradeTicker(
+  input: Record<string, unknown>
+): Promise<{ result: string; block?: Block }> {
+  const sym = normalizeSymbol(String(input.symbol || ""));
+  if (!sym) return { result: "Invalid ticker symbol." };
+
+  const payload = await getResearchPayload(sym);
+  if (!payload) {
+    return {
+      result: `No research data is available for ${sym}, so no grade can be computed. Tell the member that honestly — do not invent a grade.`,
+    };
+  }
+
+  const g = payload.grades;
+  const name = payload.company.name;
+  const subscores = g.dimensions.map((d) => ({
+    dimension: d.dimension,
+    letter: d.letter,
+    score: d.score,
+    sufficient: d.sufficient,
+  }));
+
+  // Not enough gradeable dimensions for an overall read → no card, honest note.
+  if (g.overall.letter == null || g.overall.score == null) {
+    return {
+      result: JSON.stringify({
+        ticker: sym,
+        name,
+        grade: null,
+        graded_of_4: g.overall.graded,
+        subscores,
+        note: payload.partial
+          ? `The financial data for ${sym} is still arriving — the grade engine can't compute an honest grade yet. Say the data is still loading and to try again shortly. Never invent a grade.`
+          : `Not enough published financials to compute an overall grade for ${sym} (only ${g.overall.graded} of 4 dimensions were gradeable). Say so plainly — many small caps and ETFs don't file standardized financials. Never invent a grade.`,
+      }),
+    };
+  }
+
+  const grade = signedGrade(g.overall.letter, g.overall.score);
+
+  // Price + day move for the card — the same delayed quote get_quote uses,
+  // with the in-house screener day-change as the honest fallback. No quote and
+  // no screener read → the card simply shows no price (real data only).
+  let price: number | null = null;
+  let changePct: number | null = null;
+  try {
+    const q = await getQuote(sym);
+    if (q && q.price != null && q.price > 0) {
+      price = q.price;
+      changePct = q.changePercent ?? null;
+    }
+  } catch {
+    /* fall through to screener day change */
+  }
+  if (changePct == null) changePct = payload.momentum.chg1d;
+
+  // One-line reasons: the engine's own plain-English check sentences —
+  // strengths first, then the leading weakness, so the card stays honest.
+  const reasons = [...g.strengths.slice(0, 2), ...g.weaknesses.slice(0, 1)];
+
+  const block: Block = {
+    kind: "grade",
+    ticker: sym,
+    name,
+    grade,
+    letter: g.overall.letter,
+    label: g.overall.label,
+    score: g.overall.score,
+    graded: g.overall.graded,
+    subscores,
+    price,
+    changePct,
+    reasons,
+    asOf: payload.cachedAt,
+  };
+
+  return {
+    result: JSON.stringify({
+      ticker: sym,
+      name,
+      grade,
+      verdict: g.overall.label,
+      score: g.overall.score,
+      graded_of_4: g.overall.graded,
+      subscores,
+      price,
+      change_pct: changePct,
+      strengths: g.strengths.slice(0, 3),
+      weaknesses: g.weaknesses.slice(0, 3),
+      note: "A graded ticker card is shown to the member automatically — refer to it naturally rather than restating every number. These are the platform's educational research grades; never frame the grade as a buy/sell recommendation.",
+    }),
+    block,
+  };
+}
+
 /** Execute one Kai tool → { toolResult (string for the model), block? (client render) }. */
 async function runTool(
   name: string,
@@ -358,6 +489,7 @@ async function runTool(
 ): Promise<{ result: string; block?: Block }> {
   try {
     if (name === "get_daily_changes") return runDailyChanges(input, ctx);
+    if (name === "grade_ticker") return runGradeTicker(input);
     if (name === "propose_alert_rule") return runProposeAlert(input, ctx);
     if (name === "create_alert_rule") return runCreateAlert(input, ctx);
     if (name === "list_my_alerts") return runListMyAlerts(ctx);
