@@ -1046,10 +1046,10 @@ export default function ScreenerSurface({
               <CornerDownLeft className="h-3.5 w-3.5" />
             </button>
           </div>
+          {/* The parse echo is a SENTENCE, so it reads in the body face —
+              mono is for values, never for prose. */}
           {nlNote && (
-            <p className="mt-1.5 font-mono text-[10px] uppercase tracking-[0.12em] text-soft">
-              {nlNote}
-            </p>
+            <p className="mt-1.5 text-[11.5px] leading-snug text-soft">{nlNote}</p>
           )}
         </BoardCard>
 
@@ -1142,13 +1142,15 @@ export default function ScreenerSurface({
           </div>
         )}
 
-        {/* Filter panel — a carded disclosure. White-caps label, 15px interior
-            padding, hairline-ruled ledger inside (never cards-in-cards). */}
+        {/* Filter panel — the terminal object: a rounded-[16px] dark card
+            (border-sand bg-card) with 16px interior padding, white-caps group
+            heads inside, raised-well pills for options and --m800 wells for
+            thresholds (never cards-in-cards, never a ruled paper form). */}
         <BoardCard radius={16} className="mt-6 overflow-hidden">
           <button
             onClick={() => setFiltersOpen((v) => !v)}
             aria-expanded={filtersOpen}
-            className="f0-focus flex w-full items-center justify-between gap-2 px-[15px] py-3 text-left"
+            className="f0-focus flex w-full items-center justify-between gap-2 px-4 py-3 text-left"
           >
             <span className="flex items-center gap-2 text-[13px] font-bold uppercase tracking-[0.06em] text-ink">
               <SlidersHorizontal className="h-4 w-4 text-soft" />
@@ -1171,7 +1173,7 @@ export default function ScreenerSurface({
                 exit={{ height: 0, opacity: 0 }}
                 className="overflow-hidden"
               >
-                <div className="border-t border-sand px-[15px]">
+                <div className="border-t border-sand px-4">
                   <FilterPanel
                     isFTA={isFTA}
                     isKid={isKid}
@@ -1256,9 +1258,12 @@ export default function ScreenerSurface({
             )}
             {/* The sort is a stated fact, not a hidden default: the surface
                 opens on CLUB SIGNAL — what the Club is actually engaging with
-                — and the line above says so. */}
-            <label className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-soft">
-              Sort
+                — and the line above says so. The menu sits in the same raised
+                --m800 well as every other control on the surface. */}
+            <label className="relative inline-flex items-center gap-1.5 rounded-full border border-sand bg-midnight-800 py-[5px] pl-3 pr-7 transition-colors focus-within:border-accent">
+              <span className="text-[10.5px] font-bold uppercase tracking-[0.06em] text-soft">
+                Sort
+              </span>
               <select
                 value={sortKey}
                 onChange={(e) => {
@@ -1266,7 +1271,7 @@ export default function ScreenerSurface({
                   setSortDir(e.target.value === "ticker" ? "asc" : "desc");
                   setAppliedScreenId(null);
                 }}
-                className="f0-focus rounded bg-transparent font-display text-[11.5px] font-bold uppercase tracking-normal text-ink outline-none"
+                className="f0-focus cursor-pointer appearance-none bg-transparent text-[12px] font-semibold text-ink outline-none"
               >
                 {SORT_OPTIONS.map((o) => (
                   <option key={o.key} value={o.key}>
@@ -1274,11 +1279,15 @@ export default function ScreenerSurface({
                   </option>
                 ))}
               </select>
+              <ChevronDown
+                aria-hidden
+                className="pointer-events-none absolute right-2.5 h-3 w-3 text-soft"
+              />
             </label>
             <button
               onClick={() => setExplainerOpen((v) => !v)}
               aria-expanded={explainerOpen}
-              className="f0-focus inline-flex items-center gap-1 rounded font-mono text-[10px] uppercase tracking-[0.14em] text-soft hover:text-ink"
+              className="f0-focus inline-flex items-center gap-1 rounded text-[11px] font-semibold uppercase tracking-[0.06em] text-soft transition-colors hover:text-ink"
             >
               <Info className="h-3.5 w-3.5" />
               How to use this
@@ -1407,26 +1416,31 @@ export default function ScreenerSurface({
               ))}
             </div>
 
-            {/* Pagination */}
+            {/* Pagination — the same raised-well pills as every other control;
+                the page count is a COUNT, so it stays mono tabular. */}
             {pageCount > 1 && (
-              <div className="mt-4 flex items-center justify-center gap-4">
-                <button
+              <div className="mt-4 flex items-center justify-center gap-3">
+                <WellChip
+                  as="button"
+                  type="button"
                   disabled={page === 0}
                   onClick={() => setPage((p) => Math.max(0, p - 1))}
-                  className="f0-focus rounded font-mono text-[10.5px] uppercase tracking-[0.14em] text-soft transition-colors hover:text-ink disabled:opacity-30"
+                  className="f0-focus f0-press disabled:opacity-30"
                 >
                   ← Prev
-                </button>
-                <span className="font-mono text-[10.5px] tabular-nums text-soft">
+                </WellChip>
+                <span className="font-mono text-[11px] font-semibold tabular-nums text-soft">
                   {page + 1} / {pageCount}
                 </span>
-                <button
+                <WellChip
+                  as="button"
+                  type="button"
                   disabled={page >= pageCount - 1}
                   onClick={() => setPage((p) => Math.min(pageCount - 1, p + 1))}
-                  className="f0-focus rounded font-mono text-[10.5px] uppercase tracking-[0.14em] text-soft transition-colors hover:text-ink disabled:opacity-30"
+                  className="f0-focus f0-press disabled:opacity-30"
                 >
                   Next →
-                </button>
+                </WellChip>
               </div>
             )}
           </>
@@ -1693,7 +1707,7 @@ function SaveScreenControl({
             if (e.key === "Escape") setOpen(false);
           }}
           placeholder="Name this screen"
-          className="w-40 border-b border-sand bg-transparent py-1 font-display text-[13px] font-semibold text-ink outline-none transition-colors placeholder:font-normal placeholder:text-soft/70 hover:border-gold-400 focus:border-accent"
+          className="w-44 rounded-[10px] border border-sand bg-midnight-800 px-3 py-[7px] font-display text-[13px] font-semibold text-ink outline-none transition-colors placeholder:font-normal placeholder:text-soft/70 focus:border-accent"
         />
       </label>
       <button
@@ -1712,13 +1726,15 @@ function SaveScreenControl({
       >
         <X className="h-3.5 w-3.5" />
       </button>
+      {/* Sentences read in the body face; only the COUNT is mono. */}
       {error ? (
-        <span className="w-full font-mono text-[10px] uppercase tracking-[0.12em] text-soft">
-          {error}
-        </span>
+        <span className="w-full text-[11.5px] leading-snug text-soft">{error}</span>
       ) : (
-        <span className="w-full font-mono text-[10px] uppercase tracking-[0.12em] text-soft/70">
-          {count} of {SAVED_SCREEN_LIMIT} saved · reusing a name replaces it
+        <span className="w-full text-[11.5px] text-soft/80">
+          <span className="font-mono text-[11px] font-semibold tabular-nums">
+            {count} of {SAVED_SCREEN_LIMIT}
+          </span>{" "}
+          saved · reusing a name replaces it
         </span>
       )}
     </span>
@@ -1893,7 +1909,7 @@ function RowActions({
           onAddFamily();
         }}
         title="Add to family watchlist"
-        className="f0-chip f0-press f0-focus px-2 py-1 text-[11px] font-semibold text-soft hover:text-gold-700 disabled:opacity-50"
+        className="f0-press f0-focus inline-flex items-center gap-1 rounded-full border border-sand bg-midnight-800 px-2 py-1 text-[11px] font-semibold text-soft transition-colors hover:text-gold-700 disabled:opacity-50"
       >
         <Plus className="h-3.5 w-3.5" />
         {compact ? "" : "Add to family watchlist"}
@@ -1905,7 +1921,7 @@ function RowActions({
           onSuggest();
         }}
         title="Suggest to community"
-        className="f0-chip f0-press f0-focus px-2 py-1 text-[11px] font-semibold text-soft hover:text-gold-700 disabled:opacity-50"
+        className="f0-press f0-focus inline-flex items-center gap-1 rounded-full border border-sand bg-midnight-800 px-2 py-1 text-[11px] font-semibold text-soft transition-colors hover:text-gold-700 disabled:opacity-50"
       >
         <Users2 className="h-3.5 w-3.5" />
         {compact ? "" : "Suggest to community"}
@@ -1987,16 +2003,29 @@ function emaTrendLabel(t: NonNullable<CustomFilters["emaTrend"]>): string {
 }
 
 /* ============================================================================
- * FILTER PANEL — ruled field groups, not a grid of boxes.
+ * FILTER PANEL — a TERMINAL OBJECT, not a reskinned form.
  *
- * The previous pass restyled the RESULTS into a hairline ledger but left the
- * filters as `grid-cols-2 sm:grid-cols-4` blocks of bordered inputs, which made
- * the dominant block on the surface the one thing still reading as the old app.
- * It is now built from the same vocabulary as everything below it: a section
- * rule per group, and one hairline-ruled row per filter — label and its plain-
- * English hint on the left, the control itself on the right. Nothing is boxed;
- * the controls are underlined fields and pill chips, so the panel reads as a
- * form on paper rather than as a grid of cards.
+ * The first restyle kept the old form-on-paper idiom here — `f0-ledger` ruled
+ * rows, underlined display-font selects, underlined number fields with gold
+ * hover rules — which made the dominant block on the surface the one thing
+ * still reading as the old app. That vocabulary is gone. The panel now speaks
+ * the same language as Discover's KAI INTERPRETATION card and the WellChips
+ * around it:
+ *
+ *   · the panel lives in the dark card (rounded-[16px] border-sand bg-card,
+ *     16px interior padding) the disclosure above already draws
+ *   · each filter GROUP sits under a white-caps 12.5px group head
+ *   · every one-of-N option is the established raised-well pill — an --m800
+ *     well at rest, the accent-tinted pill when live, MONO when the label is
+ *     a numeric value ($50M+)
+ *   · every range/threshold input is a dark well (--m800, sand hairline,
+ *     accent hairline on focus) holding a MONO tabular value with its unit
+ *   · long lists (exchange / sector / subsector) are the same dark well
+ *     around a native select
+ *
+ * There is no Apply button because there never was one — every control writes
+ * CustomFilters live, and the accent-pill active-filters row below the card is
+ * the standing record of what is applied.
  *
  * Every filter that existed still exists and still writes the SAME key on
  * CustomFilters, so the preset buttons, the active-filter chips and the
@@ -2021,6 +2050,15 @@ const MOVE_FIELDS: { key: "minChg1d" | "minChg5d" | "minChg1m" | "minChg3m"; lab
   { key: "minChg3m", label: "3m" },
 ];
 
+/** The moving-average trend, as pills — one per state the data feed knows. */
+const EMA_OPTIONS: { value: NonNullable<CustomFilters["emaTrend"]>; label: string }[] = [
+  { value: "above20", label: "Above 20-day average" },
+  { value: "below20", label: "Below 20-day average" },
+  { value: "above50", label: "Above 50-day average" },
+  { value: "below50", label: "Below 50-day average" },
+  { value: "above2050", label: "Above both averages" },
+];
+
 function FilterPanel({
   isFTA,
   isKid,
@@ -2038,11 +2076,11 @@ function FilterPanel({
   const subsectorOptions = selectedSector ? SUBSECTORS[selectedSector] : [];
 
   return (
-    <div className="pb-4">
+    <div className="pb-4 pt-3.5">
       {/* ── What to look at ─────────────────────────────────────────────── */}
-      <FieldGroup label="Universe">
-        <FieldRow label="Exchange">
-          <FieldSelect
+      <FieldGroup label="Universe" first>
+        <Field label="Exchange">
+          <WellSelect
             ariaLabel="Exchange"
             value={value.exchange ?? ""}
             onChange={(v) => patch({ exchange: v || null })}
@@ -2053,23 +2091,26 @@ function FilterPanel({
                 {formatExchange(e)}
               </option>
             ))}
-          </FieldSelect>
-        </FieldRow>
+          </WellSelect>
+        </Field>
 
-        <FieldRow label="Security type">
-          <FieldSelect
-            ariaLabel="Security type"
-            value={value.type ?? ""}
-            onChange={(v) => patch({ type: (v as CustomFilters["type"]) || null })}
+        <Field label="Security type">
+          <Chip active={!value.type} onClick={() => patch({ type: null })}>
+            Stocks + ETFs
+          </Chip>
+          <Chip
+            active={value.type === "common"}
+            onClick={() => patch({ type: "common" })}
           >
-            <option value="">Stocks + ETFs</option>
-            <option value="common">Common stocks</option>
-            <option value="etf">ETFs</option>
-          </FieldSelect>
-        </FieldRow>
+            Common stocks
+          </Chip>
+          <Chip active={value.type === "etf"} onClick={() => patch({ type: "etf" })}>
+            ETFs
+          </Chip>
+        </Field>
 
-        <FieldRow label="Sector">
-          <FieldSelect
+        <Field label="Sector">
+          <WellSelect
             ariaLabel="Sector"
             value={value.sector ?? ""}
             /* Changing the sector clears any subsector chosen under the old one. */
@@ -2081,14 +2122,14 @@ function FilterPanel({
                 {s}
               </option>
             ))}
-          </FieldSelect>
-        </FieldRow>
+          </WellSelect>
+        </Field>
 
-        <FieldRow
+        <Field
           label="Subsector"
           hint={selectedSector ? undefined : "Choose a sector first"}
         >
-          <FieldSelect
+          <WellSelect
             ariaLabel="Subsector"
             value={value.subsector ?? ""}
             onChange={(v) => patch({ subsector: v || null })}
@@ -2100,123 +2141,124 @@ function FilterPanel({
                 {s}
               </option>
             ))}
-          </FieldSelect>
-        </FieldRow>
+          </WellSelect>
+        </Field>
 
-        <FieldRow label="Company size" hint="Smallest market cap you'll look at" wrap>
+        <Field label="Company size" hint="Smallest market cap you'll look at">
           <Chip active={value.minMcap == null} onClick={() => patch({ minMcap: null })}>
             Any
           </Chip>
           {MCAP_STEPS.map((s) => (
             <Chip
               key={s.label}
+              mono
               active={value.minMcap === s.value}
               onClick={() => patch({ minMcap: s.value })}
             >
               {s.label}
             </Chip>
           ))}
-        </FieldRow>
+        </Field>
       </FieldGroup>
 
       {/* ── How it is trading ───────────────────────────────────────────── */}
       <FieldGroup label="Price and movement">
-        <FieldRow label="Share price" hint="Leave either side blank for no limit">
-          <NumField
+        <Field label="Share price" hint="Leave either side blank for no limit">
+          <WellNum
             ariaLabel="Minimum price"
             prefix="$"
             value={value.minPrice}
             onChange={(v) => patch({ minPrice: v })}
           />
-          <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-soft">to</span>
-          <NumField
+          <span className="text-[11.5px] text-soft">to</span>
+          <WellNum
             ariaLabel="Maximum price"
             prefix="$"
             value={value.maxPrice}
             onChange={(v) => patch({ maxPrice: v })}
           />
-        </FieldRow>
+        </Field>
 
-        <FieldRow label="Minimum move" hint="Percent gained over each window" wrap>
+        <Field label="Minimum move" hint="Percent gained over each window">
           {MOVE_FIELDS.map((f) => (
-            <NumField
+            <WellNum
               key={f.key}
               ariaLabel={`Minimum ${f.label} move percent`}
               prefix={f.label}
               suffix="%"
-              width="w-14"
+              width="w-12"
               value={value[f.key]}
               onChange={(v) => patch({ [f.key]: v } as Partial<CustomFilters>)}
             />
           ))}
-        </FieldRow>
+        </Field>
 
-        <FieldRow label="Relative volume" hint="Times its own 20-day average">
-          <NumField
+        <Field label="Relative volume" hint="Times its own 20-day average">
+          <WellNum
             ariaLabel="Minimum relative volume"
             prefix="≥"
             suffix="×"
             value={value.minVolRatio}
             onChange={(v) => patch({ minVolRatio: v })}
           />
-        </FieldRow>
+        </Field>
       </FieldGroup>
 
       {/* ── Advanced (FTA) ──────────────────────────────────────────────── */}
       {isFTA ? (
         <FieldGroup label="Advanced — Academy">
-          <FieldRow label="RSI" hint="Low reads oversold, high reads strong">
-            <NumField
+          <Field label="RSI" hint="Low reads oversold, high reads strong">
+            <WellNum
               ariaLabel="RSI at or below"
               prefix="≤"
-              width="w-12"
+              width="w-10"
               value={value.rsiMax}
               onChange={(v) => patch({ rsiMax: v })}
             />
-            <NumField
+            <WellNum
               ariaLabel="RSI at or above"
               prefix="≥"
-              width="w-12"
+              width="w-10"
               value={value.rsiMin}
               onChange={(v) => patch({ rsiMin: v })}
             />
-          </FieldRow>
+          </Field>
 
-          <FieldRow label="Opening gap" hint="Percent away from yesterday's close">
-            <NumField
+          <Field label="Opening gap" hint="Percent away from yesterday's close">
+            <WellNum
               ariaLabel="Gap up at or above percent"
               prefix="Up ≥"
               suffix="%"
-              width="w-14"
+              width="w-12"
               value={value.minGap}
               onChange={(v) => patch({ minGap: v })}
             />
-            <NumField
+            <WellNum
               ariaLabel="Gap down at or below percent"
               prefix="Down ≤"
               suffix="%"
-              width="w-14"
+              width="w-12"
               value={value.maxGap}
               onChange={(v) => patch({ maxGap: v })}
             />
-          </FieldRow>
+          </Field>
 
-          <FieldRow label="Moving-average trend">
-            <FieldSelect
-              ariaLabel="Moving-average trend"
-              value={value.emaTrend ?? ""}
-              onChange={(v) => patch({ emaTrend: (v as CustomFilters["emaTrend"]) || null })}
-            >
-              <option value="">Any trend</option>
-              <option value="above20">Above 20-day average</option>
-              <option value="below20">Below 20-day average</option>
-              <option value="above50">Above 50-day average</option>
-              <option value="below50">Below 50-day average</option>
-              <option value="above2050">Above both averages</option>
-            </FieldSelect>
-          </FieldRow>
+          <Field label="Moving-average trend">
+            <Chip active={!value.emaTrend} onClick={() => patch({ emaTrend: null })}>
+              Any trend
+            </Chip>
+            {EMA_OPTIONS.map((o) => (
+              <Chip
+                key={o.value}
+                active={value.emaTrend === o.value}
+                onClick={() => patch({ emaTrend: o.value })}
+              >
+                {o.label}
+              </Chip>
+            ))}
+          </Field>
 
-          <FieldRow label="52-week position" hint="Where it sits in its own year" wrap>
+          <Field label="52-week position" hint="Where it sits in its own year">
             <Chip
               active={!!value.nearHigh}
               onClick={() => patch({ nearHigh: value.nearHigh ? null : true })}
@@ -2229,11 +2271,11 @@ function FilterPanel({
             >
               Near the low
             </Chip>
-          </FieldRow>
+          </Field>
         </FieldGroup>
       ) : (
         !isKid && (
-          <div className="f0-rule-top mt-5 flex items-start gap-2 pt-3 text-[12.5px] leading-snug text-soft">
+          <div className="mt-6 flex items-start gap-2 border-t border-sand pt-4 text-[12.5px] leading-snug text-soft">
             <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-gold-600" />
             <span>
               Advanced technical filters — RSI, moving-average trend, gap and 52-week
@@ -2249,48 +2291,49 @@ function FilterPanel({
   );
 }
 
-/* ── Field group ───────────────────────────────────────────────────────────
-   A white-caps section label (the terminal register — never a tiny gray mono
-   mark) over a run of hairline-ruled filter rows, INSIDE the filter card. A
-   rule between rows of one card is the established idiom; a card per filter
-   would be cards inside cards. */
-function FieldGroup({ label, children }: { label: string; children: React.ReactNode }) {
+/* ── Filter group ──────────────────────────────────────────────────────────
+   A white-caps group head (the terminal's section-label register — never a
+   tiny gray mono mark) over its filters. The law's uneven rhythm: 24px
+   between groups, 12px head→content, 18px between filters inside a group. */
+function FieldGroup({
+  label,
+  first = false,
+  children,
+}: {
+  label: string;
+  first?: boolean;
+  children: React.ReactNode;
+}) {
   return (
-    <section className="pt-4 first:pt-3.5">
-      <h3 className="text-[12px] font-bold uppercase tracking-[0.08em] text-ink">
+    <section className={first ? "" : "mt-6"}>
+      <h3 className="text-[12.5px] font-bold uppercase tracking-[0.08em] text-ink">
         {label}
       </h3>
-      <div className="f0-ledger mt-1">{children}</div>
+      <div className="mt-3 flex flex-col gap-[18px]">{children}</div>
     </section>
   );
 }
 
-/* ── Field row ─────────────────────────────────────────────────────────────
-   One filter per ruled line. NOTE: `.f0-ledger-row` is UNLAYERED css, so it
-   beats Tailwind's `items-*` utilities — a wrapping row therefore aligns its
-   children with `self-start`, never with `items-start` on the row. */
-function FieldRow({
+/* ── One filter ────────────────────────────────────────────────────────────
+   Body-register label (Inter — never the old display-font row heads), a soft
+   plain-English hint, then the controls: pills and wells in a wrap. */
+function Field({
   label,
   hint,
-  wrap = false,
   children,
 }: {
   label: string;
   hint?: string;
-  /** Control side wraps to several lines (chips, multi-field rows). */
-  wrap?: boolean;
   children: React.ReactNode;
 }) {
   return (
-    <div className="f0-ledger-row justify-between gap-4">
-      <div className={`min-w-0 ${wrap ? "self-start pt-1" : ""}`}>
-        <p className="font-display text-[13.5px] font-bold text-ink">{label}</p>
-        {hint && <p className="mt-0.5 text-[11.5px] leading-snug text-soft">{hint}</p>}
-      </div>
+    <div>
+      <p className="text-[12px] font-semibold leading-none text-ink">{label}</p>
+      {hint && <p className="mt-1 text-[11.5px] leading-snug text-soft">{hint}</p>}
       <div
-        className={`flex min-w-0 flex-wrap items-center justify-end gap-x-2.5 gap-y-2 ${
-          wrap ? "self-start" : ""
-        }`}
+        role="group"
+        aria-label={label}
+        className="mt-2 flex flex-wrap items-center gap-2"
       >
         {children}
       </div>
@@ -2298,10 +2341,12 @@ function FieldRow({
   );
 }
 
-/* ── Underlined select ─────────────────────────────────────────────────────
-   The same control idiom as the "Sorted by" select at the top of the surface:
-   type on a hairline, no box, no chrome. */
-function FieldSelect({
+/* ── Dark-well select ──────────────────────────────────────────────────────
+   The long lists (exchange / sector / subsector): a native select sunk into
+   an --m800 well behind a sand hairline that warms to the accent on focus —
+   the same well the pills and number fields sit in, so the whole panel is
+   one material. */
+function WellSelect({
   value,
   onChange,
   children,
@@ -2315,28 +2360,39 @@ function FieldSelect({
   ariaLabel: string;
 }) {
   return (
-    <select
-      aria-label={ariaLabel}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      disabled={disabled}
-      className="f0-focus max-w-[16rem] cursor-pointer truncate border-b border-sand bg-transparent py-1 text-right font-display text-[13px] font-bold text-ink outline-none transition-colors hover:border-gold-400 focus:border-accent disabled:cursor-not-allowed disabled:opacity-45"
+    <span
+      className={`relative inline-flex max-w-full items-center rounded-[10px] border border-sand bg-midnight-800 transition-colors focus-within:border-accent ${
+        disabled ? "opacity-45" : ""
+      }`}
     >
-      {children}
-    </select>
+      <select
+        aria-label={ariaLabel}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        disabled={disabled}
+        className="f0-focus max-w-[15rem] cursor-pointer appearance-none truncate rounded-[10px] bg-transparent py-[7px] pl-3 pr-8 text-[12.5px] font-semibold text-ink outline-none disabled:cursor-not-allowed"
+      >
+        {children}
+      </select>
+      <ChevronDown
+        aria-hidden
+        className="pointer-events-none absolute right-2.5 h-3.5 w-3.5 text-soft"
+      />
+    </span>
   );
 }
 
-/* ── Underlined number field ───────────────────────────────────────────────
-   Every screener input is a market number, so it is MONO and tabular. The
-   affix carries the unit ($, %, ×, the window) so the field itself stays a
-   bare number; an unset filter shows the honest em-dash placeholder. */
-function NumField({
+/* ── Dark-well number field ────────────────────────────────────────────────
+   Every screener threshold is a market number, so the value is MONO and
+   tabular inside its own --m800 well; the mono affix carries the unit ($, %,
+   ×, the window) so the field itself stays a bare number, and an unset filter
+   shows the honest em-dash placeholder. Focus warms the hairline to accent. */
+function WellNum({
   value,
   onChange,
   prefix,
   suffix,
-  width = "w-16",
+  width = "w-14",
   ariaLabel,
 }: {
   value: number | null | undefined;
@@ -2347,32 +2403,49 @@ function NumField({
   ariaLabel: string;
 }) {
   return (
-    <label className="inline-flex items-baseline gap-1 font-mono text-[11px] uppercase tracking-[0.1em] text-soft">
-      {prefix && <span aria-hidden>{prefix}</span>}
+    <label className="inline-flex items-baseline gap-1.5 rounded-[10px] border border-sand bg-midnight-800 px-2.5 py-[7px] transition-colors focus-within:border-accent">
+      {prefix && (
+        <span
+          aria-hidden
+          className="font-mono text-[10px] font-semibold uppercase tracking-[0.08em] text-soft"
+        >
+          {prefix}
+        </span>
+      )}
       <input
         type="number"
         aria-label={ariaLabel}
         value={value ?? ""}
         onChange={(e) => onChange(e.target.value === "" ? null : Number(e.target.value))}
         placeholder="—"
-        className={`f0-focus ${width} border-b border-sand bg-transparent py-1 text-right font-mono text-[13px] font-semibold tabular-nums tracking-normal text-ink outline-none transition-colors placeholder:text-soft/60 hover:border-gold-400 focus:border-accent`}
+        className={`${width} bg-transparent text-right font-mono text-[13px] font-semibold tabular-nums text-ink outline-none placeholder:text-soft/60`}
       />
-      {suffix && <span aria-hidden>{suffix}</span>}
+      {suffix && (
+        <span
+          aria-hidden
+          className="font-mono text-[10px] font-semibold uppercase tracking-[0.08em] text-soft"
+        >
+          {suffix}
+        </span>
+      )}
     </label>
   );
 }
 
-/* A selection toggle — the law's raised-well chip: a quiet --m800 well at
-   rest (light sand on the family paper, a raised cool well on the club
-   terminal), the accent pill when selected. Same tokens as WellChip, in the
-   filter panel's mono register. */
+/* A selection toggle — the law's raised-well pill, same tokens and register
+   as WellChip above: a quiet --m800 well at rest (light sand on the family
+   paper, a raised cool well on the club terminal), the accent-tinted pill
+   when live. `mono` puts a NUMERIC label ($50M+) in the data face; word
+   labels stay in the body face — mono is for values, never for words. */
 function Chip({
   active,
   onClick,
+  mono = false,
   children,
 }: {
   active: boolean;
   onClick: () => void;
+  mono?: boolean;
   children: React.ReactNode;
 }) {
   return (
@@ -2380,7 +2453,11 @@ function Chip({
       type="button"
       aria-pressed={active}
       onClick={onClick}
-      className={`f0-press f0-focus inline-flex shrink-0 items-center rounded-full border px-3 py-[6px] font-mono text-[11px] font-bold uppercase tracking-[0.08em] transition-colors ${
+      className={`f0-press f0-focus inline-flex shrink-0 items-center rounded-full border px-3 py-[6px] transition-colors ${
+        mono
+          ? "font-mono text-[11px] font-bold tabular-nums"
+          : "text-[11.5px] font-semibold"
+      } ${
         active
           ? "border-accent/60 bg-accent/12 text-gold-700"
           : "border-sand bg-midnight-800 text-soft hover:text-ink"
