@@ -495,10 +495,17 @@ function OverviewTab({
   // state), each drawn as a graphic card — real month chart + stored level
   // lines + state chip + distance-to-trigger. Followed or not, if it is live
   // it is on the board; nothing is cherry-picked.
-  const liveSetups = useMemo(
-    () => setups.filter((s) => SETUP_STATE_META[s.state]?.developing),
-    [setups]
-  );
+  const liveSetups = useMemo(() => {
+    const developing = setups.filter((s) => SETUP_STATE_META[s.state]?.developing);
+    if (developing.length > 0) return developing;
+    // Quiet market: nothing is mid-lifecycle right now. The board still leads
+    // with the GRAPHIC cards — the newest setups in their REAL states
+    // (triggered / cooled / called off), which is honest and keeps the visual
+    // surface present instead of silently reverting to the text rows.
+    return [...setups]
+      .sort((a, b) => (b.state_entered_at ?? "").localeCompare(a.state_entered_at ?? ""))
+      .slice(0, 4);
+  }, [setups]);
 
   const lead = developing[0] ?? null;
   const rest = developing.slice(1);
