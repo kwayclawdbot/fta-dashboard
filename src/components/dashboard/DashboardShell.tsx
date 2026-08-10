@@ -237,6 +237,26 @@ export default function DashboardShell({
     // naming a surface the app no longer has. Same ground, said in the
     // vocabulary the app actually uses.
     <div data-mode={mode} className="min-h-screen bg-paper">
+      {/* PRE-HYDRATION MODE/THEME STAMP — kills the light-first flash.
+          The root layout's THEME_INIT can only read the cc-appearance COOKIE,
+          which goes stale the moment the member's mode changes (a family-mode
+          visit leaves `family` behind; the next club render then paints warm
+          paper for the full hydration window — seconds on heavy pages — before
+          ModeManager's effect flips it dark, which read as "nothing changed").
+          This inline script ships INSIDE the server-rendered shell HTML, so it
+          executes on parse — before this subtree ever paints — stamping the
+          resolved mode + policy-resolved theme on <html> and refreshing the
+          cookie for the NEXT first paint. Deterministic per render (props
+          only), so hydration sees identical markup. */}
+      <script
+        dangerouslySetInnerHTML={{
+          __html: `(function(){try{var d=document.documentElement;d.setAttribute('data-mode',${JSON.stringify(
+            mode
+          )});var ap=${JSON.stringify(
+            appearance
+          )};var p=null;try{p=localStorage.getItem('fta-theme')}catch(e){}var dark=ap==='club'?(p?(p==='dark'||(p==='system'&&window.matchMedia('(prefers-color-scheme: dark)').matches)):true):false;d.setAttribute('data-theme',dark?'dark':'light');document.cookie='cc-appearance='+ap+'; path=/; max-age=31536000; SameSite=Lax';}catch(e){}})();`,
+        }}
+      />
       <ModeManager mode={mode} appearance={appearance} />
       <KaiSheetProvider
         tier={user.tier}
