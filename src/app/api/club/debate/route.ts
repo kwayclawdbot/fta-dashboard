@@ -1,6 +1,10 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { unstable_cache } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { CLUB_TTL_SECONDS } from "@/lib/club/club-cache";
 import { isMemberVisibleOnDoor } from "@/lib/register";
+import type { ExperienceKey } from "@/lib/experience/registry";
 import { FLOORS, floorMet } from "@/lib/club/score";
 import { resolveClubCtx, type ClubCtx, type CoreResult } from "@/lib/club/home-context";
 
@@ -17,6 +21,40 @@ import { resolveClubCtx, type ClubCtx, type CoreResult } from "@/lib/club/home-c
  * The body is `debateCore(ctx)` — shared verbatim with GET /api/club/home.
  */
 export const runtime = "nodejs";
+
+/**
+ * THE "JOIN THE DEBATE" FACE STACK, RESOLVED ONCE PER MINUTE PER DOOR.
+ *
+ * A bounded roster of consented adult member faces — social proof, NOT vote
+ * attribution: the per-member vote direction stays sealed behind the aggregate
+ * RPC, so nothing about who voted which way is cached (or knowable) here.
+ *
+ * SAFE TO SHARE ONE ENTRY PER DOOR: this read already ran on the SERVICE-ROLE
+ * client so the register filter could be applied in code, and the door wall
+ * (kids never — 214; teens on the family door only — 216) is the only thing
+ * scoping it. Because the door IS the cache key, a club-door member can never
+ * be handed the family-door stack.
+ */
+const getCachedDebateFaces = unstable_cache(
+  async (door: ExperienceKey) => {
+    const admin = createAdminClient();
+    const { data: people } = await admin
+      .from("profiles")
+      .select("id, display_name, username, avatar_url, role, age_group, track")
+      .not("avatar_url", "is", null)
+      .limit(40);
+    return (people || [])
+      .filter((p) => isMemberVisibleOnDoor(p, door))
+      .slice(0, 8)
+      .map((p) => ({
+        id: p.id,
+        name: p.display_name || p.username || null,
+        url: p.avatar_url as string | null,
+      }));
+  },
+  ["club:debate-faces"],
+  { revalidate: CLUB_TTL_SECONDS, tags: ["club-debate"] }
+);
 
 export async function debateCore(ctx: ClubCtx): Promise<CoreResult> {
   if ((await ctx.getRegister()) === "kid") {
@@ -44,26 +82,12 @@ export async function debateCore(ctx: ClubCtx): Promise<CoreResult> {
   // The faces are door-walled like every other people listing: kids never (214),
   // teens to the family door only (216) — this stack carries NAMES, so it is a
   // people surface, not decoration.
-  let participants: { id: string; name: string | null; url: string | null }[] = [];
-  if (s.total > 0) {
-    const admin = ctx.admin();
-    const [{ data: people }, door] = await Promise.all([
-      admin
-        .from("profiles")
-        .select("id, display_name, username, avatar_url, role, age_group, track")
-        .not("avatar_url", "is", null)
-        .limit(40),
-      ctx.getDoor(),
-    ]);
-    participants = (people || [])
-      .filter((p) => isMemberVisibleOnDoor(p, door))
-      .slice(0, 8)
-      .map((p) => ({
-        id: p.id,
-        name: p.display_name || p.username || null,
-        url: p.avatar_url as string | null,
-      }));
-  }
+  //
+  // IDENTICAL FOR EVERY MEMBER ON THE SAME DOOR; 60s revalidate — the stack is
+  // a property of the ROOM, not of the viewer, so it is cached by door while
+  // the vote state above stays strictly per-request.
+  const participants =
+    s.total > 0 ? await getCachedDebateFaces(await ctx.getDoor()) : [];
 
   return {
     body: {

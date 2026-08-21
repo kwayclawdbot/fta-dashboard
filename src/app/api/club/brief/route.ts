@@ -1,6 +1,9 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { unstable_cache } from "next/cache";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { CLUB_TTL_SECONDS } from "@/lib/club/club-cache";
 import { resolveClubCtx, type ClubCtx, type CoreResult } from "@/lib/club/home-context";
 
 /**
@@ -38,20 +41,53 @@ export async function briefCore(ctx: ClubCtx): Promise<CoreResult> {
     };
   }
 
-  const admin = ctx.admin();
-  const items = await deriveItems(admin);
-  const updatedAt = new Date().toISOString();
+  // IDENTICAL FOR EVERY MEMBER; 60s revalidate — see getCachedBrief.
+  return { body: await getCachedBrief() };
+}
 
-  // Optional LLM polish — never required, never blocking beyond a short timeout.
-  const polished = await maybePolish(items);
-  return {
-    body: {
+/**
+ * THE BRIEF, COMPUTED ONCE PER MINUTE FOR THE WHOLE CLUB.
+ *
+ * `deriveItems` takes nothing but the service-role client and `maybePolish`
+ * takes nothing but the derived items, so the ENTIRE body of this endpoint is a
+ * pure function of the database at a point in time — the same five sentences
+ * for every member, tier and register. It was nonetheless being recomputed from
+ * scratch on every single page view: five service-role reads AND, whenever
+ * ANTHROPIC_API_KEY is live, an uncached ~2.9s call out to api.anthropic.com.
+ * That is one LLM request per member per pageview for a paragraph that does not
+ * vary by member.
+ *
+ * Wrapping derive+polish together (not just the reads) is the point: the polish
+ * is the expensive half, and polishing a cached derive would still pay for it
+ * every time. With this in place the club makes AT MOST ONE Anthropic call per
+ * minute in total, and the "Today in 30 seconds" field stops being the home
+ * board's long pole for everyone but the one unlucky request that misses.
+ *
+ * `updatedAt` moved INSIDE the cache deliberately — it must state when the copy
+ * was computed, not when it was served, or a cached brief would advertise a
+ * freshness it does not have.
+ *
+ * The entitlement wall stays OUTSIDE, on the per-request path: free tier is
+ * still 403'd before this is ever consulted, so nothing cached here can leak
+ * past a gate.
+ */
+const getCachedBrief = unstable_cache(
+  async () => {
+    const admin = createAdminClient();
+    const items = await deriveItems(admin);
+    const updatedAt = new Date().toISOString();
+
+    // Optional LLM polish — never required, never blocking beyond a short timeout.
+    const polished = await maybePolish(items);
+    return {
       updatedAt,
       items: polished ?? items,
       source: polished ? "live" : "derived",
-    },
-  };
-}
+    };
+  },
+  ["club:brief"],
+  { revalidate: CLUB_TTL_SECONDS, tags: ["club-brief"] }
+);
 
 export async function GET(req: NextRequest) {
   const supabase = await createClient();

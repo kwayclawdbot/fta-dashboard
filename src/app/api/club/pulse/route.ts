@@ -1,7 +1,15 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { unstable_cache } from "next/cache";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
-import { resolveClubCtx, type ClubCtx, type CoreResult } from "@/lib/club/home-context";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { CLUB_TTL_SECONDS } from "@/lib/club/club-cache";
+import {
+  resolveClubCtx,
+  type ClubCtx,
+  type ClubSnapshotRow,
+  type CoreResult,
+} from "@/lib/club/home-context";
 
 /**
  * GET /api/club/pulse
@@ -37,118 +45,150 @@ interface Provenance {
 }
 
 export async function pulseCore(ctx: ClubCtx): Promise<CoreResult> {
+  // The read-through freshness trigger stays on the per-request path: it
+  // schedules an after()-deferred recompute, which is an effect, not a value.
   await ctx.ensureFresh();
-  const admin = ctx.admin();
-  const signals: Signal[] = [];
-  const used = new Set<string>();
+  // IDENTICAL FOR EVERY MEMBER; 60s revalidate — see getCachedPulse.
+  return { body: await getCachedPulse() };
+}
 
-  // The canonical snapshots — one shared read backs the first three signals.
-  const rows = (await ctx.getSnapshots()).map((s) => ({
-    ticker: s.ticker.toUpperCase(),
-    rank: s.rank as number | null,
-    change: Number(s.club_change_14d),
-    prov: (s.provenance as Provenance) || {},
-  }));
+/**
+ * "WHAT THE CLUB IS SEEING", COMPUTED ONCE PER MINUTE FOR THE WHOLE CLUB.
+ *
+ * `pulseCore` never touched the viewer: not the profile, not the tier, not the
+ * register, not the door. Every one of its four signals is derived from the
+ * canonical snapshot ledger and `club_events`, so the four sentences it returns
+ * are the same four sentences for every member — and it was paying up to five
+ * round trips per pageview to rebuild them (the ledger, two sparkline reads,
+ * the fresh-research scan, and its dependent sparkline).
+ *
+ * SAFE TO SHARE ONE ENTRY ACROSS MEMBERS: both tables it reads are
+ * `for select to authenticated using (true)` (ticker_intel_snapshots, mig 141;
+ * club_events is read through the service-role client here exactly as before),
+ * so a service-role read returns precisely the rows the member's own read
+ * would have.
+ */
+const getCachedPulse = unstable_cache(
+  async (): Promise<{ signals: Signal[] }> => {
+    const admin = createAdminClient();
+    const signals: Signal[] = [];
+    const used = new Set<string>();
 
-  // SPEED: which tickers the first three signals are about is decided purely
-  // from `rows` — no query needed. Only the sparklines and the fresh-research
-  // lookup hit the database, and they do not depend on each other, so they now
-  // go out as ONE batch instead of three sequential awaits interleaved with the
-  // in-memory selection. The selection ORDER (and therefore which ticker lands
-  // in which signal) is byte-identical to before: each pick still excludes the
-  // ones already used, in the same sequence.
+    const { data: snaps } = await admin
+      .from("ticker_intel_snapshots")
+      .select("ticker, rank, club_change_14d, provenance")
+      .order("rank", { ascending: true });
 
-  // 1. Attention leader (rank 1 of the snapshot ledger).
-  const leader = rows[0];
-  if (leader) used.add(leader.ticker);
+    // The canonical snapshots — one shared read backs the first three signals.
+    const rows = ((snaps as ClubSnapshotRow[] | null) ?? []).map((s) => ({
+      ticker: s.ticker.toUpperCase(),
+      rank: s.rank as number | null,
+      change: Number(s.club_change_14d),
+      prov: (s.provenance as Provenance) || {},
+    }));
 
-  // 2. New watchers — most watchlist adds in the last 7 days (from provenance).
-  const topWatch = [...rows]
-    .filter((r) => !used.has(r.ticker))
-    .map((r) => ({ ticker: r.ticker, count: r.prov.watchlistAdds7d ?? 0 }))
-    .filter((r) => r.count > 0)
-    .sort((a, b) => b.count - a.count)[0];
-  if (topWatch) used.add(topWatch.ticker);
+    // SPEED: which tickers the first three signals are about is decided purely
+    // from `rows` — no query needed. Only the sparklines and the fresh-research
+    // lookup hit the database, and they do not depend on each other, so they now
+    // go out as ONE batch instead of three sequential awaits interleaved with the
+    // in-memory selection. The selection ORDER (and therefore which ticker lands
+    // in which signal) is byte-identical to before: each pick still excludes the
+    // ones already used, in the same sequence.
 
-  // 3. Sentiment shift — largest 7-day net sentiment swing (from provenance).
-  const topSent = [...rows]
-    .filter((r) => !used.has(r.ticker))
-    .map((r) => ({ ticker: r.ticker, net: r.prov.sentiment?.net7d ?? 0 }))
-    .filter((r) => r.net !== 0)
-    .sort((a, b) => Math.abs(b.net) - Math.abs(a.net))[0];
-  if (topSent) used.add(topSent.ticker);
+    // 1. Attention leader (rank 1 of the snapshot ledger).
+    const leader = rows[0];
+    if (leader) used.add(leader.ticker);
 
-  // Signals 1–3 can never total more than three, so the fresh-research read
-  // always ran under the old `signals.length < 4` guard — it is kept explicit.
-  const preCount = (leader ? 1 : 0) + (topWatch ? 1 : 0) + (topSent ? 1 : 0);
+    // 2. New watchers — most watchlist adds in the last 7 days (from provenance).
+    const topWatch = [...rows]
+      .filter((r) => !used.has(r.ticker))
+      .map((r) => ({ ticker: r.ticker, count: r.prov.watchlistAdds7d ?? 0 }))
+      .filter((r) => r.count > 0)
+      .sort((a, b) => b.count - a.count)[0];
+    if (topWatch) used.add(topWatch.ticker);
 
-  const [leaderSpark, watchSpark, freshRes] = await Promise.all([
-    leader ? spark(admin, leader.ticker) : Promise.resolve(undefined),
-    topWatch ? spark(admin, topWatch.ticker) : Promise.resolve(undefined),
-    preCount < 4
-      ? admin
-          .from("club_events")
-          .select("ticker, created_at")
-          .eq("kind", "research_view")
-          .not("ticker", "is", null)
-          .order("created_at", { ascending: false })
-          .limit(20)
-      : Promise.resolve({ data: null }),
-  ]);
+    // 3. Sentiment shift — largest 7-day net sentiment swing (from provenance).
+    const topSent = [...rows]
+      .filter((r) => !used.has(r.ticker))
+      .map((r) => ({ ticker: r.ticker, net: r.prov.sentiment?.net7d ?? 0 }))
+      .filter((r) => r.net !== 0)
+      .sort((a, b) => Math.abs(b.net) - Math.abs(a.net))[0];
+    if (topSent) used.add(topSent.ticker);
 
-  if (leader) {
-    signals.push({
-      kind: "most_watched",
-      ticker: leader.ticker,
-      headline: `The Club is focused on ${leader.ticker}`,
-      detail: "Highest community attention this week.",
-      delta: leader.change,
-      spark: leaderSpark,
-    });
-  }
+    // Signals 1–3 can never total more than three, so the fresh-research read
+    // always ran under the old `signals.length < 4` guard — it is kept explicit.
+    const preCount = (leader ? 1 : 0) + (topWatch ? 1 : 0) + (topSent ? 1 : 0);
 
-  if (topWatch) {
-    signals.push({
-      kind: "new_watchers",
-      ticker: topWatch.ticker,
-      headline: `New eyes on ${topWatch.ticker}`,
-      detail: "Added to Club watchlists this week.",
-      delta: topWatch.count,
-      spark: watchSpark,
-    });
-  }
+    const [leaderSpark, watchSpark, freshRes] = await Promise.all([
+      leader ? spark(admin, leader.ticker) : Promise.resolve(undefined),
+      topWatch ? spark(admin, topWatch.ticker) : Promise.resolve(undefined),
+      preCount < 4
+        ? admin
+            .from("club_events")
+            .select("ticker, created_at")
+            .eq("kind", "research_view")
+            .not("ticker", "is", null)
+            .order("created_at", { ascending: false })
+            .limit(20)
+        : Promise.resolve({ data: null }),
+    ]);
 
-  if (topSent) {
-    signals.push({
-      kind: "sentiment_shift",
-      ticker: topSent.ticker,
-      headline: `Conviction building on ${topSent.ticker}`,
-      detail: topSent.net >= 0 ? "The Club is leaning bullish." : "The Club is leaning cautious.",
-      delta: topSent.net,
-    });
-  }
-
-  // 4. Fresh research — most recently viewed ticker (fills to 3–4 signals). Its
-  // ticker is only known once the read above lands, so its spark is the one
-  // genuinely dependent second hop.
-  if (signals.length < 4) {
-    const fresh = (freshRes.data || []).find(
-      (r: { ticker: string | null }) => r.ticker && !used.has(r.ticker.toUpperCase())
-    );
-    if (fresh?.ticker) {
+    if (leader) {
       signals.push({
-        kind: "fresh_research",
-        ticker: fresh.ticker.toUpperCase(),
-        headline: `Someone just dug into ${fresh.ticker.toUpperCase()}`,
-        detail: "Fresh research in the Club.",
-        delta: 1,
-        spark: await spark(admin, fresh.ticker),
+        kind: "most_watched",
+        ticker: leader.ticker,
+        headline: `The Club is focused on ${leader.ticker}`,
+        detail: "Highest community attention this week.",
+        delta: leader.change,
+        spark: leaderSpark,
       });
     }
-  }
 
-  return { body: { signals: signals.slice(0, 4) } };
-}
+    if (topWatch) {
+      signals.push({
+        kind: "new_watchers",
+        ticker: topWatch.ticker,
+        headline: `New eyes on ${topWatch.ticker}`,
+        detail: "Added to Club watchlists this week.",
+        delta: topWatch.count,
+        spark: watchSpark,
+      });
+    }
+
+    if (topSent) {
+      signals.push({
+        kind: "sentiment_shift",
+        ticker: topSent.ticker,
+        headline: `Conviction building on ${topSent.ticker}`,
+        detail: topSent.net >= 0 ? "The Club is leaning bullish." : "The Club is leaning cautious.",
+        delta: topSent.net,
+      });
+    }
+
+    // 4. Fresh research — most recently viewed ticker (fills to 3–4 signals). Its
+    // ticker is only known once the read above lands, so its spark is the one
+    // genuinely dependent second hop.
+    if (signals.length < 4) {
+      const fresh = (freshRes.data || []).find(
+        (r: { ticker: string | null }) => r.ticker && !used.has(r.ticker.toUpperCase())
+      );
+      if (fresh?.ticker) {
+        signals.push({
+          kind: "fresh_research",
+          ticker: fresh.ticker.toUpperCase(),
+          headline: `Someone just dug into ${fresh.ticker.toUpperCase()}`,
+          detail: "Fresh research in the Club.",
+          delta: 1,
+          spark: await spark(admin, fresh.ticker),
+        });
+      }
+    }
+
+    return { signals: signals.slice(0, 4) };
+  },
+  ["club:pulse"],
+  { revalidate: CLUB_TTL_SECONDS, tags: ["club-pulse"] }
+);
 
 export async function GET(req: NextRequest) {
   const supabase = await createClient();

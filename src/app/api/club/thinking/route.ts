@@ -1,6 +1,10 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { unstable_cache } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { CLUB_TTL_SECONDS } from "@/lib/club/club-cache";
 import { beltForXp } from "@/lib/belts";
+import type { ExperienceKey } from "@/lib/experience/registry";
 import { resolveClubCtx, type ClubCtx, type CoreResult } from "@/lib/club/home-context";
 
 /**
@@ -39,10 +43,36 @@ interface Post {
   createdAt: string;
 }
 
-export async function thinkingCore(ctx: ClubCtx): Promise<CoreResult> {
-  const admin = ctx.admin();
+/** How many posts the response carries: the lead plus three secondaries. */
+const THINKING_SHOWN = 4;
 
-  // Member-authored posts (exclude auto 'activity' cards and 'anchor').
+/**
+ * TODAY'S BEST THINKING, RANKED ONCE PER MINUTE PER DOOR.
+ *
+ * The ranking, the belts, the counts and the copy are a pure function of the
+ * room and the viewer's DOOR (which decides the author band). None of it varies
+ * by member — yet it was SEVEN reads per pageview (posts, likes, comments,
+ * saves, authors, ticker names, and a grouped XP scan over every author) to
+ * rebuild four identical cards.
+ *
+ * The one genuinely viewer-keyed field is `likedByMe`. It is answered from the
+ * SAME `post_likes` rows the counts come from — that table is
+ * `for select to authenticated using (true)` (mig 034), so who liked what is
+ * already readable by every member and caching it discloses nothing new. The
+ * caller stamps it per request, below.
+ *
+ * SAFE TO SHARE ONE ENTRY PER DOOR: every read here already ran on the
+ * SERVICE-ROLE client with the register band as an explicit filter (RLS does
+ * not reach a service-role read), and the door IS the cache key — so a
+ * club-door member can never be served the family-door band.
+ */
+const getCachedThinking = unstable_cache(
+  async (
+    door: ExperienceKey
+  ): Promise<{ posts: Post[]; likedBy: Record<string, string[]> }> => {
+    const admin = createAdminClient();
+
+    // Member-authored posts (exclude auto 'activity' cards and 'anchor').
   //
   // THE READ WALL, RESTATED AS A FILTER. This runs on the SERVICE-ROLE client,
   // which bypasses RLS, so neither the kid wall (214) nor the teen door wall
@@ -52,7 +82,6 @@ export async function thinkingCore(ctx: ClubCtx): Promise<CoreResult> {
   //   • adult rows → always.
   // `author_register` is NOT NULL as of 214 (every historical row backfilled),
   // so the .in() is null-safe and needs no companion .neq.
-  const door = await ctx.getDoor();
   const bands = door === "family" ? ["adult", "teen"] : ["adult"];
 
   const { data: posts } = await admin
@@ -64,7 +93,7 @@ export async function thinkingCore(ctx: ClubCtx): Promise<CoreResult> {
     .limit(40);
 
   if (!posts || posts.length === 0) {
-    return { body: { lead: null, secondary: [] } };
+    return { posts: [], likedBy: {} };
   }
 
   const ids = posts.map((p) => p.id);
@@ -100,9 +129,6 @@ export async function thinkingCore(ctx: ClubCtx): Promise<CoreResult> {
 
   const likeRows = (likes || []) as { post_id: string; user_id: string }[];
   const likeCount = countBy(likeRows, "post_id");
-  const likedByMe = new Set(
-    likeRows.filter((l) => l.user_id === ctx.user.id).map((l) => l.post_id)
-  );
   const commentCount = countBy(comments || [], "post_id");
   const saveCount = countBy(saves || [], "target_id");
   const authorMap = new Map((authors || []).map((a) => [a.id, a]));
@@ -145,7 +171,8 @@ export async function thinkingCore(ctx: ClubCtx): Promise<CoreResult> {
         verified: role === "admin" || role === "coach",
       },
       votes: likeCount.get(p.id) || 0,
-      likedByMe: likedByMe.has(p.id),
+      // Stamped per request by the caller — see thinkingCore.
+      likedByMe: false,
       comments: commentCount.get(p.id) || 0,
       saves: saveCount.get(p.id) || 0,
       // Real, working link — the ticker's research page (with the community tab),
@@ -169,7 +196,38 @@ export async function thinkingCore(ctx: ClubCtx): Promise<CoreResult> {
   const lead = shaped[0] ?? null;
   if (lead && lead.votes + lead.comments + lead.saves >= 3) lead.editorPick = true;
 
-  return { body: { lead, secondary: shaped.slice(1, 4) } };
+  // Only the four cards the response actually carries survive into the cache
+  // entry — and with them, only the like rows belonging to those four, so
+  // "did I like this" stays answerable without a second query.
+  const top = shaped.slice(0, THINKING_SHOWN);
+  const topIds = new Set(top.map((p) => p.id));
+  const likedBy: Record<string, string[]> = {};
+  for (const l of likeRows) {
+    if (!topIds.has(l.post_id)) continue;
+    (likedBy[l.post_id] ??= []).push(l.user_id);
+  }
+
+  return { posts: top, likedBy };
+  },
+  ["club:thinking"],
+  { revalidate: CLUB_TTL_SECONDS, tags: ["club-thinking"] }
+);
+
+export async function thinkingCore(ctx: ClubCtx): Promise<CoreResult> {
+  // ONE door resolution, memoised on the ctx (no round trip of its own — it
+  // rides the profile read the request already made).
+  const { posts, likedBy } = await getCachedThinking(await ctx.getDoor());
+  if (posts.length === 0) return { body: { lead: null, secondary: [] } };
+
+  // THE ONE VIEWER-KEYED FIELD. Stamped here, over rows the cache already holds,
+  // so the card still ships its own like state without a per-request query.
+  const me = ctx.user.id;
+  const shaped = posts.map((p) => ({
+    ...p,
+    likedByMe: (likedBy[p.id] ?? []).includes(me),
+  }));
+
+  return { body: { lead: shaped[0], secondary: shaped.slice(1, THINKING_SHOWN) } };
 }
 
 export async function GET(req: NextRequest) {

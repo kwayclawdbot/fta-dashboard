@@ -48,8 +48,14 @@ import type { StanceShift } from "@/lib/community-watchlist-board";
  */
 
 /** One minute. Long enough to absorb a burst, short enough that the newsroom
- *  and the board still read as live. */
-const CLUB_TTL_SECONDS = 60;
+ *  and the board still read as live.
+ *
+ *  EXPORTED because the same invariant now governs the /api/club/* section
+ *  cores (brief, trending, thinking, people, collective, pulse, debate's face
+ *  roster). Those wrappers live next to the derive they cache — the derive is
+ *  the thing being reasoned about — but they must all share ONE window, or the
+ *  board would show sections computed a minute apart from each other. */
+export const CLUB_TTL_SECONDS = 60;
 
 /* ── the newsroom feed (/discover, board 02 foot) ─────────────────────────── */
 
