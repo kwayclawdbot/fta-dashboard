@@ -56,25 +56,60 @@ const CORES: Record<ClubSectionKey, (ctx: ClubCtx) => Promise<CoreResult>> = {
   invite: inviteCore,
 };
 
-const KEYS = Object.keys(CORES) as ClubSectionKey[];
+/** All nine cores. Kept exported for any caller that genuinely wants the full
+ *  set — the Home surface deliberately does not (see HOME_KEYS). */
+export const KEYS = Object.keys(CORES) as ClubSectionKey[];
 
-/** Everything except the brief — see buildClubHomeSeedSplit. */
-const KEYS_WITHOUT_BRIEF = KEYS.filter((k) => k !== "brief");
+/**
+ * WHAT THE HOME PAGE ACTUALLY RENDERS — the seed's whole key set.
+ *
+ * The server component was running all NINE cores and ClubHomeV2 reads SEVEN of
+ * them: `trending` (TOP IN THE CLUB + the split's ledger), `brief` (TODAY IN 30
+ * SECONDS, on its own boundary), `foryou` (YOUR SIGNALS), `debate` + `thinking`
+ * (WHERE THE CLUB SPLITS) and `collective` + `people` (THE ROOM).
+ *
+ * `pulse` and `invite` are read by NOTHING on this surface — `data.pulse` and
+ * `data.invite` have zero references in src/components/clubhome — so the page
+ * was paying for two whole section cores (pulse alone is a snapshot-ledger read
+ * plus up to three club_events scans) to build objects it then dropped on the
+ * floor. They are simply not asked for here any more.
+ *
+ * THE ENDPOINTS THEMSELVES STAY ALIVE. /api/club/pulse and /api/club/invite are
+ * unchanged and still serve any other caller; this trims the HOME PAGE's server
+ * render path, not the API surface. The client's `applyBatch` already treats an
+ * absent key as "leave alone" rather than "null it out", so a seed that omits
+ * them needs no change on the consumer side.
+ */
+const HOME_KEYS: ClubSectionKey[] = [
+  "brief",
+  "trending",
+  "foryou",
+  "thinking",
+  "debate",
+  "collective",
+  "people",
+];
+
+/** Everything the home renders except the brief — see buildClubHomeSeedSplit. */
+const HOME_KEYS_WITHOUT_BRIEF = HOME_KEYS.filter((k) => k !== "brief");
 
 /**
  * Run the section cores against an already-resolved context and assemble the
  * batch envelope. Never throws: a failing core degrades to `null` + an `_errors`
  * entry.
  *
- * `keys` defaults to all nine. The /dashboard server component passes the
- * eight-key subset so the brief can stream on its own boundary — see
- * buildClubHomeSeedSplit. Sections not in `keys` are simply absent from the
- * envelope, which the client's `applyBatch` already treats as "leave alone"
- * rather than "null it out", so nothing downstream needed to change.
+ * `keys` defaults to HOME_KEYS — the seven sections the Home surface actually
+ * renders, NOT all nine cores (see HOME_KEYS for what was dropped and why).
+ * The /dashboard server component passes the six-key subset so the brief can
+ * stream on its own boundary — see buildClubHomeSeedSplit. Sections not in
+ * `keys` are simply absent from the envelope, which the client's `applyBatch`
+ * already treats as "leave alone" rather than "null it out", so nothing
+ * downstream needed to change. `KEYS` (all nine) is still available for any
+ * caller that genuinely wants the full set.
  */
 export async function buildClubHomePayload(
   ctx: ClubCtx,
-  keys: ClubSectionKey[] = KEYS
+  keys: ClubSectionKey[] = HOME_KEYS
 ): Promise<ClubHomePayload> {
   // PERF: the metrics read-through is memoised and the cores that depend on it
   // (trending, pulse) already await it themselves — so kicking it off WITHOUT
@@ -111,27 +146,10 @@ export async function buildClubHomePayload(
   return { ...out, _errors: errors } as ClubHomePayload;
 }
 
-/**
- * Server-component entry point: resolve the context from an RSC supabase client
- * and build the payload.
- *
- * SAFETY: this NEVER rejects and NEVER throws. The returned promise is handed
- * straight to a client component and resolved with `use()`, so a rejection would
- * blow up the whole Home surface. `null` means "no server seed" and the client
- * transparently falls back to its own batched fetch — the pre-existing path.
- */
-export function buildClubHomeSeed(
-  supabase: SupabaseClient
-): Promise<ClubHomePayload | null> {
-  return (async () => {
-    const ctx = await resolveClubCtx(supabase);
-    if (!ctx) return null;
-    return await buildClubHomePayload(ctx);
-  })().catch((err) => {
-    console.error("[club/home] server seed failed:", err);
-    return null;
-  });
-}
+/* `buildClubHomeSeed` — the single-boundary seed — was removed with the payload
+   trim: it had zero importers. buildClubHomeSeedSplit superseded it the moment
+   the brief moved onto its own Suspense boundary, and keeping a second entry
+   point around only meant a second place for the key set to drift. */
 
 /** The two-boundary seed — see buildClubHomeSeedSplit. */
 export interface ClubHomeSplitSeed {
@@ -152,7 +170,7 @@ export interface ClubHomeSplitSeed {
  *
  * This resolves the request context ONCE (so nothing is fetched twice) and hands
  * back two independent promises. /dashboard puts them on two Suspense
- * boundaries: the board streams as soon as the eight fast cores settle, and the
+ * boundaries: the board streams as soon as the six fast cores settle, and the
  * "Today in 30 seconds" field fills in on its own a beat later behind its own
  * skeleton. Loading still never renders as empty — each boundary has its own
  * skeleton — it just stops being one shared 2.9s gate.
@@ -172,7 +190,7 @@ export function buildClubHomeSeedSplit(
   );
 
   const rest = ctxPromise
-    .then((ctx) => (ctx ? buildClubHomePayload(ctx, KEYS_WITHOUT_BRIEF) : null))
+    .then((ctx) => (ctx ? buildClubHomePayload(ctx, HOME_KEYS_WITHOUT_BRIEF) : null))
     .catch((err) => {
       console.error("[club/home] split seed (rest) failed:", err);
       return null;

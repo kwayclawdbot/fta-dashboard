@@ -14,9 +14,25 @@
 import { useEffect, useRef, useState } from "react";
 import type { ClubData, ClubEndpoint } from "./contract";
 
+/**
+ * THE SECTIONS HOME ACTUALLY RENDERS.
+ *
+ * This list drives the whole fallback path: which keys are read out of the
+ * batch/seed envelope, and which endpoints get an individual re-fetch when a
+ * section is flagged in `_errors`. It used to name all nine /api/club/* routes
+ * — but `pulse` and `invite` are read by nothing on this surface (there is not
+ * one `data.pulse` or `data.invite` reference in src/components/clubhome), so
+ * a total-batch failure was fanning out two extra requests for objects that
+ * would be discarded. The server seed builds the same seven (HOME_KEYS in
+ * src/lib/club/home-payload.ts); the two lists are the same statement about
+ * the same surface and must stay in step.
+ *
+ * The endpoints themselves are untouched — /api/club/pulse and
+ * /api/club/invite still serve any other caller.
+ */
 const ENDPOINTS: ClubEndpoint[] = [
-  "pulse", "collective", "invite", "brief",
-  "trending", "thinking", "debate", "foryou", "people",
+  "brief", "trending", "foryou",
+  "thinking", "debate", "collective", "people",
 ];
 
 export type ClubDataState = { [K in ClubEndpoint]: ClubData[K] | null };
