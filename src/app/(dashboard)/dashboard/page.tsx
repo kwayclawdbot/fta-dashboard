@@ -59,7 +59,7 @@ export default async function DashboardHome() {
   // — the session, profile and tier this route needs have therefore already
   // been resolved by the time it asks for them.
   const supabase = await getRequestClient();
-  const route = await resolveHomeRoute(supabase);
+  const route = await resolveHomeRoute();
 
   if (route.kind === "club") {
     // Started here, awaited inside the boundaries. Neither promise ever rejects
@@ -67,11 +67,12 @@ export default async function DashboardHome() {
     // ClubHomeV2 fall back to its original client fetch.
     const { rest, brief } = buildClubHomeSeedSplit(supabase);
 
-    // THE LOOP. A third promise on the SAME boundary as the board: it is four
-    // small indexed reads (get_home_state, xp_events, flashcard_reviews,
-    // watch_current_state), all far faster than the eight section cores, so it
-    // adds nothing to the skeleton's life. It never rejects (buildTodaySeed
-    // catches) and null degrades to the client fetching /api/club/today.
+    // THE LOOP. A third promise on the SAME boundary as the board. It used to be
+    // four small indexed reads plus a dependent course-progress pair; it is now
+    // shaped straight off the request-scoped `get_home_boot` payload the layout
+    // and the route above already read, so it costs no round trip at all. It
+    // never rejects (buildTodaySeed catches) and null degrades to the client
+    // fetching /api/club/today.
     const todayPromise = route.userId
       ? buildTodaySeed(supabase, route.userId)
       : undefined;

@@ -238,7 +238,10 @@ export function tierFromPrograms(
   return programs?.includes("fta") ? "fta" : "fic";
 }
 
-function normalizeTier(value: unknown): FamilyTier {
+/** The one place a raw `family_tiers.tier` string becomes a FamilyTier. Exported
+ *  because the boot RPC (migration 217) returns the same column and must land on
+ *  the same verdict — including its "anything unrecognised is 'fic'" default. */
+export function normalizeTier(value: unknown): FamilyTier {
   if (value === "fta") return "fta";
   if (value === "free") return "free";
   return "fic";

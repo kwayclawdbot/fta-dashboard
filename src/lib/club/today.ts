@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { fetchStreak } from "@/lib/streak";
+import { getRequestHomeBoot, type HomeBoot } from "@/lib/supabase/rsc";
 
 /**
  * TODAY — the adult Club home's daily loop payload.
@@ -175,13 +176,59 @@ export async function buildTodayLoop(
 }
 
 /**
- * RSC entry point. Resolves the user itself and NEVER rejects — the promise is
- * handed straight to a client component and awaited with `use()`, so a
- * rejection would take the whole Home surface down. `null` = no seed, and the
- * client falls back to fetching /api/club/today.
+ * THE SAME LOOP, READ OFF THE BOOT PAYLOAD.
+ *
+ * `buildTodayLoop` above is six round trips (get_home_state, a 400-day
+ * xp_events scan for the streak, flashcard_reviews, watch_current_state, and
+ * then a dependent two-query course-progress read) — every one of them for a
+ * fact that `get_home_boot` (migration 217) already computed in the SAME
+ * payload the layout and the home route are reading. On the RSC path it is
+ * therefore free: the boot is request-scoped, so this shapes what is already in
+ * hand and issues no query at all.
+ *
+ * NULL STILL MEANS "THE READ DID NOT LAND", per field, exactly as before: a
+ * missing boot degrades the whole loop to the six-query path rather than
+ * inventing zeros.
+ */
+export function todayLoopFromBoot(boot: HomeBoot): TodayLoop {
+  const t = boot.home_state?.today ?? null;
+  const prog =
+    t && boot.course_progress?.slug === t.course_slug ? boot.course_progress : null;
+
+  return {
+    lesson: t
+      ? {
+          title: t.title,
+          href: `/courses/${t.course_slug}/${t.module_id}/${t.lesson_id}`,
+          context: t.module_title ? `${t.module_title} · ${t.course_title}` : t.course_title ?? null,
+          courseTitle: t.course_title ?? null,
+          done: prog?.done ?? null,
+          total: prog?.total ?? null,
+        }
+      : null,
+    streakDays: boot.streak?.days ?? null,
+    actedToday: boot.streak?.acted_today ?? false,
+    cardsDue: boot.cards_due ?? null,
+    watchTriggered: boot.watch_triggered ?? null,
+  };
+}
+
+/**
+ * RSC entry point. NEVER rejects — the promise is handed straight to a client
+ * component and awaited with `use()`, so a rejection would take the whole Home
+ * surface down. `null` = no seed, and the client falls back to fetching
+ * /api/club/today.
+ *
+ * Reads the request-scoped boot first (zero round trips — the layout has
+ * already paid for it) and only falls back to the six-query assembly if the
+ * boot did not land.
  */
 export function buildTodaySeed(supabase: DB, userId: string): Promise<TodayLoop | null> {
-  return buildTodayLoop(supabase, userId).catch((err) => {
+  return (async () => {
+    const boot = await getRequestHomeBoot();
+    if (boot) return todayLoopFromBoot(boot);
+    return await buildTodayLoop(supabase, userId);
+  })().catch((err) => {
     console.error("[club/today] seed failed:", err);
     return null;
   });

@@ -3,12 +3,11 @@ export const dynamic = "force-dynamic";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import {
-  getRequestClient,
-  getRequestFamilyMemberCount,
+  getRequestHomeBoot,
   getRequestProfile,
-  getRequestTierState,
   getRequestUser,
 } from "@/lib/supabase/rsc";
+import { normalizeTier } from "@/lib/tier";
 import { effectiveClubTier } from "@/lib/tier";
 import { isSoloAccount, deriveRegister } from "@/lib/register";
 import DashboardShell from "@/components/dashboard/DashboardShell";
@@ -30,24 +29,24 @@ export default async function DashboardLayout({
   children: React.ReactNode;
 }) {
   // SPEED — this shell is the TTFB floor for EVERY route in the group (a page
-  // as trivial as /courses could not stream a byte until it finished), and it
-  // used to be a chain of SIX SEQUENTIAL Supabase round trips: getUser →
-  // profiles → family_tiers → enrollments → challenge_vips → family_profiles.
+  // as trivial as /courses could not stream a byte until it finished).
   //
-  // Two changes, no behavioural difference:
-  //   • the session and the profile now come from the request-scoped helpers
-  //     (src/lib/supabase/rsc.ts), so the auth check is a local signature
-  //     verification instead of a GoTrue round trip, and the profile row is read
-  //     ONCE for the whole render instead of once here and again in the page.
-  //   • the four family-scoped reads all depend only on `family_id`, which is
-  //     known after the profile — so they now run as ONE parallel batch. The
-  //     `challenge_pass` read is no longer skipped for non-fic families; its
-  //     RESULT is still gated on `tier === 'fic'` below, so what the shell shows
-  //     is unchanged, it just stops costing a round trip to find out.
-  const [supabase, user, profile] = await Promise.all([
-    getRequestClient(),
+  // It began as a chain of SIX SEQUENTIAL Supabase round trips (getUser →
+  // profiles → family_tiers → enrollments → challenge_vips → family_profiles),
+  // became one profile read plus a six-way PARALLEL batch, and is now ONE RPC:
+  //   • the session is a LOCAL signature verification, not a GoTrue call;
+  //   • `get_home_boot` (migration 217) returns the tier, the Club clock, the
+  //     challenge-pass window, the VIP flag, the household, the member count and
+  //     the door in a single payload — the six family-scoped reads this batch
+  //     used to fan out, joined inside Postgres instead of over six HTTPS
+  //     connections. The SAME payload also carries what /dashboard's page and
+  //     its Today loop need, and it is request-scoped, so the whole render pays
+  //     for it once.
+  // Every gate below is byte-identical; only the fetching moved.
+  const [user, profile, boot] = await Promise.all([
     getRequestUser(),
     getRequestProfile(),
+    getRequestHomeBoot(),
   ]);
 
   if (!user) {
@@ -61,102 +60,55 @@ export default async function DashboardLayout({
   const familyId = profile?.family_id ?? null;
   const isOwnerRole = profile?.role === "parent" || profile?.role === "admin";
 
-  const [
-    { tier, clubLapsed },
-    passRes,
-    vipRes,
-    fpRes,
-    memberCount,
-    doorRes,
-  ] = await Promise.all([
-    // Family membership tier (FIC/FTA) — kids inherit the family's tier. The
-    // Club clock (migration 127): an fta family may be `clubLapsed` (past its
-    // 12-month Challenge Club window) — still tier 'fta' for the FTA hub, but
-    // the shell surfaces a renewal banner and Club-level pages gate at free.
-    getRequestTierState(familyId),
-    // Challenge-pass window (Lane C7): a family whose tier is 'fic' MAY actually
-    // be a 5-Day Challenge pass-holder (full Club until expires_at, then free).
-    familyId
-      ? supabase
-          .from("enrollments")
-          .select("expires_at")
-          .eq("family_id", familyId)
-          .eq("program", "challenge_pass")
-          .eq("status", "active")
-          .not("expires_at", "is", null)
-          .gt("expires_at", new Date().toISOString())
-          .maybeSingle()
-      : Promise.resolve(null),
-    // VIP ticket holder? (Lane C9b tour) — used to add the VIP-room stop to the
-    // challenge walkthrough. Cheap own-family lookup.
-    familyId
-      ? supabase
-          .from("challenge_vips")
-          .select("id")
-          .eq("family_id", familyId)
-          .maybeSingle()
-      : Promise.resolve(null),
-    // Solo (individual, non-parent) member — a family of one. Only owners
-    // (parent/admin) can be solo; kids/teens always belong to a parent's family.
-    // Derived from a COMPLETED family_profiles household so unfinished/default
-    // rows never read as solo, and the nav keeps its family framing for them.
-    familyId && isOwnerRole
-      ? supabase
-          .from("family_profiles")
-          .select("household, completed_at")
-          .eq("family_id", familyId)
-          .maybeSingle()
-      : Promise.resolve(null),
-    // …and the fact that answer is checked against: how many people are ACTUALLY
-    // on this family. One cached `head` count, in the same parallel batch as
-    // everything else keyed on family_id, so it costs no extra latency —
-    // and it is only asked for the owners whose solo verdict can turn on it.
-    familyId && isOwnerRole
-      ? getRequestFamilyMemberCount(familyId)
-      : Promise.resolve(null),
-    // THE DOOR (migration 215) — the stored experience this household entered
-    // through. It replaces the household-shape INFERENCE the shell used to make;
-    // asked for every member (kids included, they inherit the family's door) and
-    // in the same batch, so it costs no latency. Own-family read under RLS.
-    familyId
-      ? supabase
-          .from("families")
-          .select("door")
-          .eq("id", familyId)
-          .maybeSingle()
-      : Promise.resolve(null),
-  ]);
+  // The boot degrades to null on any failure; the shell then renders on the
+  // no-family defaults, which is exactly what it did for a member without one.
+  const fam = boot?.family ?? null;
 
-  // Gates unchanged — only the FETCHING moved. A pass read for a non-fic family
-  // is discarded here exactly as it was never issued before.
+  // Family membership tier (FIC/FTA) — kids inherit the family's tier. The Club
+  // clock (migration 127): an fta family may be `clubLapsed` (past its 12-month
+  // Challenge Club window) — still tier 'fta' for the FTA hub, but the shell
+  // surfaces a renewal banner and Club-level pages gate at free.
+  const tier = normalizeTier(fam?.tier);
+  const clubLapsed = fam?.club_lapsed === true;
+
+  // Challenge-pass window (Lane C7): a family whose tier is 'fic' MAY actually
+  // be a 5-Day Challenge pass-holder (full Club until expires_at, then free).
+  // The RESULT is gated on `tier === 'fic'` exactly as before.
   const challengeExpiresAt: string | null =
-    tier === "fic" ? ((passRes?.data?.expires_at as string | null) ?? null) : null;
-  const isVip = !!vipRes?.data;
+    tier === "fic" ? (fam?.challenge_expires_at ?? null) : null;
+  // VIP ticket holder? (Lane C9b tour) — adds the VIP-room stop to the
+  // challenge walkthrough.
+  const isVip = fam?.is_vip === true;
   // SOLO IS A FACT ABOUT THE ROSTER, NOT AN ANSWER ON A FORM. This used to be
   // isSoloProfile(family_profiles.household) alone, and a parent whose signup
   // JSON said {adults:1, kids:0} was called solo even with a real teen sitting on
   // the same family_id — which took the Family group out of their navigation
   // entirely (no nav row, no drawer entry, nothing). The member count now has the
   // final word; the household JSON only breaks the one-row tie. See isSoloAccount.
-  const isSolo = isSoloAccount(fpRes?.data ?? null, memberCount);
+  //
+  // The two inputs used to be a family_profiles read and a `head` count, both
+  // asked for ONLY when the viewer's role could actually be solo. They now ride
+  // the boot, so the gate is applied to the ANSWER instead of to the fetch — a
+  // non-owner still can never read as solo, it just no longer costs two round
+  // trips to establish that.
+  const isSolo =
+    familyId && isOwnerRole
+      ? isSoloAccount(
+          fam
+            ? {
+                household: fam.household as never,
+                completed_at: fam.household_completed_at,
+              }
+            : null,
+          fam?.member_count ?? null
+        )
+      : false;
 
   // FTA renewal date for the lapsed banner copy (min Club window across active
-  // fta enrollments). Still read only when actually lapsed — it is rare, and
-  // keeping it conditional means the common path never pays for it at all.
-  let clubUntil: string | null = null;
-  if (clubLapsed && familyId) {
-    const { data: en } = await supabase
-      .from("enrollments")
-      .select("club_until")
-      .eq("family_id", familyId)
-      .eq("program", "fta")
-      .eq("status", "active")
-      .not("club_until", "is", null)
-      .order("club_until", { ascending: true })
-      .limit(1)
-      .maybeSingle();
-    clubUntil = (en?.club_until as string | null) ?? null;
-  }
+  // fta enrollments). It used to be a SEVENTH round trip, conditional on the
+  // lapse so the common path never paid for it; the boot returns it as one more
+  // scalar sub-select, so it now costs nothing at all and the branch is gone.
+  const clubUntil: string | null = clubLapsed ? (fam?.club_until ?? null) : null;
 
   // ── ADMIN "VIEW AS" — the single override point (src/lib/view-as.ts) ───────
   // Everything the shell keys off (nav, register, brand/palette, tier gating)
@@ -196,9 +148,7 @@ export default async function DashboardLayout({
   // No family yet (a member mid-provisioning) has no door to read, and falls
   // back to exactly the previous solo inference.
   const register = deriveRegister(ctx);
-  const storedDoor = parseExperience(
-    (doorRes?.data as { door?: string } | null)?.door
-  );
+  const storedDoor = parseExperience(fam?.door);
   const viewAsDoor: ExperienceKey | null = viewAs
     ? viewAs === "club"
       ? "club"

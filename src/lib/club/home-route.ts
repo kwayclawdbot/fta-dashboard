@@ -1,5 +1,5 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
-import { getRequestProfile, getRequestTierState, getRequestUser } from "@/lib/supabase/rsc";
+import { getRequestHomeBoot, getRequestUser } from "@/lib/supabase/rsc";
+import { normalizeTier } from "@/lib/tier";
 import { deriveRegister, isSoloProfile, type Register } from "@/lib/register";
 import type { LearningPickup } from "@/components/clubhome/ClubHomeV2";
 
@@ -61,69 +61,35 @@ export type HomeRoute =
  * fast-path can't be taken safely (any query fails, no session, not a solo
  * member) so the untouched client path handles it — never a wrong render.
  */
-export async function resolveHomeRoute(
-  supabase: SupabaseClient
-): Promise<HomeRoute> {
+export async function resolveHomeRoute(): Promise<HomeRoute> {
   try {
-    // SPEED: the session is now a LOCAL signature check and the profile is the
-    // request-scoped read the dashboard layout is already making, so neither
-    // costs this route a round trip of its own (it used to pay a GoTrue call
-    // plus a duplicate `profiles` select — see src/lib/supabase/rsc.ts).
-    const [user, prof] = await Promise.all([
-      getRequestUser(),
-      getRequestProfile(),
-    ]);
+    // SPEED: the session is a LOCAL signature check, and everything else this
+    // route needs — profile, tier, the challenge-pass window, the household
+    // shape, `get_home_state` and lifetime XP — arrives in the SINGLE
+    // `get_home_boot` payload the dashboard layout has already requested. It is
+    // request-scoped (React `cache()`), so this costs zero additional round
+    // trips; the five-way parallel batch it replaced was itself duplicating
+    // three of the layout's own reads.
+    //
+    // The boot's `xp` is the grouped SUM computed in Postgres, the same thing
+    // `xp_for_users` (migration 118) returned — a client-side sum over
+    // `xp_events` is capped by PostgREST's max-rows and would silently
+    // under-report a long-standing member's belt.
+    const [user, boot] = await Promise.all([getRequestUser(), getRequestHomeBoot()]);
     if (!user) return { kind: "client" };
-    if (!prof) return { kind: "client" };
+    if (!boot?.profile) return { kind: "client" };
 
+    const prof = boot.profile;
     const firstName = prof.display_name?.split(" ")[0] || "";
     const familyId = prof.family_id;
 
     // The solo gate needs NO query — role and family_id are already in `prof`.
-    // Resolving it here lets us skip the two solo-only reads for families/kids
-    // instead of fetching and discarding them.
     const isParentRole = prof.role === "parent" || prof.role === "admin";
     const needSolo = isParentRole && !!familyId;
 
-    // ONE round trip for everything left. `get_home_state` and `xp_for_users`
-    // depend only on user.id; tier / family_profiles / enrollments depend only
-    // on familyId — all four inputs are known, so nothing here has to wait on
-    // anything else. (This used to be three sequential waves behind an auth
-    // call: getUser → [home_state, profile, xp] → [tier, family_profiles,
-    // enrollments].) `xp_for_users` (migration 118) is the SECURITY DEFINER
-    // grouped SUM — a client-side sum over `xp_events` is capped by PostgREST's
-    // max-rows and would silently under-report a long-standing member's belt.
-    const [{ data: state }, xpRes, { tier }, fpRes, passRes] = await Promise.all([
-      supabase.rpc("get_home_state", { p_user_id: user.id }),
-      // Promise.resolve(): the PostgREST builder is a thenable, not a Promise,
-      // so it has no .catch of its own to hang the degradation off.
-      Promise.resolve(supabase.rpc("xp_for_users", { p_user_ids: [user.id] })).catch(
-        () => null
-      ),
-      // Same `family_tiers.tier` column getFamilyTier() read, resolved once per
-      // request and shared with the shell — the free/fic/fta verdict below is
-      // unchanged (the Club-clock lapse is deliberately NOT folded in here,
-      // exactly as before).
-      getRequestTierState(familyId),
-      needSolo
-        ? supabase
-            .from("family_profiles")
-            .select("household, completed_at")
-            .eq("family_id", familyId)
-            .maybeSingle()
-        : Promise.resolve(null),
-      needSolo
-        ? supabase
-            .from("enrollments")
-            .select("expires_at")
-            .eq("family_id", familyId)
-            .eq("program", "challenge_pass")
-            .eq("status", "active")
-            .not("expires_at", "is", null)
-            .gt("expires_at", new Date().toISOString())
-            .maybeSingle()
-        : Promise.resolve(null),
-    ]);
+    // The free/fic/fta verdict is unchanged: the REAL tier, with the Club-clock
+    // lapse deliberately NOT folded in, exactly as before.
+    const tier = normalizeTier(boot.family.tier);
 
     // FREE → the dedicated free home. Resolved server-side so it paints without
     // a client round trip (identical destination to the client short-circuit).
@@ -133,10 +99,17 @@ export async function resolveHomeRoute(
     // admin with a family_id and a COMPLETED solo household profile. Anything
     // else (families, kids, teens) falls through to the untouched client.
     if (!needSolo) return { kind: "client" };
-    if (!isSoloProfile(fpRes?.data ?? null)) return { kind: "client" };
+    if (
+      !isSoloProfile({
+        household: boot.family.household as never,
+        completed_at: boot.family.household_completed_at,
+      })
+    ) {
+      return { kind: "client" };
+    }
 
     // Solo Club member → server-render ClubHomeV2 with resolved props.
-    const hs = state as HomeStateRow | null;
+    const hs = boot.home_state as HomeStateRow | null;
     const learning: LearningPickup | null =
       hs?.program && hs.today
         ? {
@@ -146,25 +119,19 @@ export async function resolveHomeRoute(
           }
         : null;
 
-    // Active 5-Day Challenge pass window — already fetched in the parallel batch
-    // above (best-effort; null is the common case and a failed read is non-fatal).
-    const challengeExpiresAt =
-      (passRes?.data?.expires_at as string | null | undefined) ?? null;
-
     // A missing row is 0 XP (White Belt) — that is a real rank, not an absence.
-    // Only a FAILED read is null, and only that renders the honest empty state.
-    const xpRow = (
-      (xpRes?.data ?? null) as { user_id: string; xp: number }[] | null
-    )?.find((r) => r.user_id === user.id);
-    const xp = xpRes?.error ? null : Number(xpRow?.xp ?? 0) || 0;
+    // Only a FAILED boot is null, and only that renders the honest empty state
+    // (it is caught above and routes to the client, so it cannot reach here).
+    const xp = Number(boot.xp ?? 0) || 0;
 
     return {
       kind: "club",
       userId: user.id,
       firstName,
+      // Active 5-Day Challenge pass window; null is the common case.
+      challengeExpiresAt: boot.family.challenge_expires_at ?? null,
       register: deriveRegister(prof),
       learning,
-      challengeExpiresAt,
       xp,
     };
   } catch {

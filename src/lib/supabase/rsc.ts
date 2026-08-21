@@ -169,3 +169,83 @@ export const getRequestFamilyMemberCount = cache(
     return count ?? null;
   }
 );
+
+/* ══════════════════════════════════════════════════════════════════════════
+   THE HOME BOOT — one round trip for the whole /dashboard render
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/** The next lesson `get_home_state` reports, as Home reads it. */
+export interface HomeBootToday {
+  lesson_id: string;
+  title: string;
+  module_id: string;
+  module_title: string;
+  course_slug: string;
+  course_title: string;
+}
+
+export interface HomeBoot {
+  profile: SessionProfile & { username: string | null };
+  family: {
+    id: string | null;
+    door: string | null;
+    tier: string;
+    club_lapsed: boolean;
+    club_until: string | null;
+    challenge_expires_at: string | null;
+    is_vip: boolean;
+    household: unknown;
+    household_completed_at: string | null;
+    member_count: number;
+  };
+  home_state: { program: "fic" | "fta" | null; today: HomeBootToday | null } | null;
+  xp: number;
+  streak: { days: number; acted_today: boolean };
+  course_progress: { slug: string; done: number; total: number } | null;
+  cards_due: number;
+  watch_triggered: number;
+  unread_notifications: number;
+  watchlist: string[];
+}
+
+/**
+ * EVERYTHING /dashboard NEEDS, IN ONE ROUND TRIP (migration 217).
+ *
+ * Three independent pieces of the Home render each used to resolve the member's
+ * family and then fan out from it:
+ *
+ *   · the (dashboard) layout — family_tiers, an enrollments read for the
+ *     challenge pass, challenge_vips, family_profiles, a member count and
+ *     families.door (plus a seventh enrollments read when the Club has lapsed);
+ *   · resolveHomeRoute      — get_home_state, xp_for_users, the tier again,
+ *     family_profiles again and the challenge-pass enrollment again;
+ *   · buildTodayLoop        — get_home_state a THIRD time, a 400-day xp_events
+ *     scan for the streak, flashcard_reviews, watch_current_state, and a
+ *     two-query course-progress read.
+ *
+ * Roughly seventeen HTTP round trips, several of them literally the same query,
+ * for a set of facts that are one join apart inside Postgres. `get_home_boot`
+ * answers all of it at once; `cache()` makes it ONE call no matter how many of
+ * the three ask.
+ *
+ * THE TIMEZONE ARGUMENT IS LOAD-BEARING. The streak is defined in LOCAL calendar
+ * days (src/lib/streak.ts), so the server's own UTC offset is passed in and the
+ * function shifts `xp_events.created_at` by it — the same day boundary
+ * `dayKeyLocal()` would have drawn.
+ *
+ * Returns null when there is no session, or when the read fails: every caller
+ * treats that as "fall back to the path you had", so a boot failure degrades
+ * rather than breaking a surface.
+ */
+export const getRequestHomeBoot = cache(async (): Promise<HomeBoot | null> => {
+  try {
+    const supabase = await getRequestClient();
+    const { data, error } = await supabase.rpc("get_home_boot", {
+      p_tz_offset_minutes: new Date().getTimezoneOffset(),
+    });
+    if (error || !data) return null;
+    return data as HomeBoot;
+  } catch {
+    return null;
+  }
+});
