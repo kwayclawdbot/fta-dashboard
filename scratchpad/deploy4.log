@@ -1,0 +1,27 @@
+Vercel CLI 50.14.0
+Retrieving project…
+Deploying kways-clawds-projects/fta-dashboard
+Uploading [--------------------] (0.0B/13.1MB)
+Uploading [=====---------------] (3.3MB/13.1MB)
+Uploading [==========----------] (6.6MB/13.1MB)
+Uploading [===============-----] (9.8MB/13.1MB)
+Uploading [====================] (13.1MB/13.1MB)
+Inspect: https://vercel.com/kways-clawds-projects/fta-dashboard/43s1ywXoyPd9ncAau3jxZ57hPy6t [28s]
+Preview: https://fta-dashboard-ftceo1clj-kways-clawds-projects.vercel.app [28s]
+https://fta-dashboard-ftceo1clj-kways-clawds-projects.vercel.appBuilding...
+Building...
+Building: Running build in Washington, D.C., USA (East) – iad1 (Turbo Build Machine)
+Building: Build machine configuration: 30 cores, 60 GB
+Building: Retrieving list of deployment files...
+Building: Downloading 3250 deployment files...
+Building: Using prebuilt build artifacts from .vercel/output
+Building: Learn more: https://vercel.link/build-output-api
+Building: Deploying outputs...
+[2K[1A[2K[GPreview: https://fta-dashboard-ftceo1clj-kways-clawds-projects.vercel.app [56s]
+Completing...
+To deploy to production (app.familyinvestingclub.com +1), run `vercel --prod`
+
+Common next commands:
+- `vercel inspect fta-dashboard-ftceo1clj-kways-clawds-projects.vercel.app --logs`
+- `vercel redeploy fta-dashboard-ftceo1clj-kways-clawds-projects.vercel.app`
+- `vercel deploy --prod`

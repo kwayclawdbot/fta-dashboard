@@ -1,0 +1,12 @@
+Vercel CLI 50.14.0
+Retrieving project…
+Deploying kways-clawds-projects/fta-dashboard
+Uploading [--------------------] (0.0B/244.2KB)
+Uploading [=====---------------] (68.2KB/244.2KB)
+Uploading [==========----------] (133.3KB/244.2KB)
+Uploading [================----] (197.3KB/244.2KB)
+Uploading [====================] (244.2KB/244.2KB)
+Inspect: https://vercel.com/kways-clawds-projects/fta-dashboard/pv4Qpq3VbfBogiMAx17WtZtpfRqo [9s]
+Preview: https://fta-dashboard-c7yjj4ccj-kways-clawds-projects.vercel.app [9s]
+https://fta-dashboard-c7yjj4ccj-kways-clawds-projects.vercel.appBuilding...
+Error: request to https://api.vercel.com/v13/deployments/dpl_pv4Qpq3VbfBogiMAx17WtZtpfRqo?teamId=team_HdJPSayY9d5So2dieJwtaiB7 failed, reason: read ETIMEDOUT
