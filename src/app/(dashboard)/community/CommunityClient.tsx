@@ -890,28 +890,40 @@ export default function CommunityClient({
 
   // Live deltas for the TOP IN THE CLUB strip. A tile with no quote renders the
   // honest dash rather than a fabricated 0.00% (TickerTile owns that contract).
+  //
+  // ONE REQUEST, NOT FIVE. This fanned out a separate `?symbol=` fetch per
+  // ticker — five browser requests, and five Polygon snapshot calls behind
+  // them — for a strip of at most five names. /api/market/quote has always
+  // taken `?symbols=A,B,C` and answers it with ONE batched Polygon call
+  // (getQuotes); IndexChips already used that form. Same contract: a symbol
+  // the batch does not come back with stays null and renders the dash.
   const [quotes, setQuotes] = useState<Record<string, number | null>>({});
   const topKey = topTickers.join(",");
   useEffect(() => {
     const list = topKey ? topKey.split(",") : [];
     if (!list.length) return;
     let live = true;
-    void Promise.all(
-      list.map(async (t) => {
-        try {
-          const r = await fetch(`/api/market/quote?symbol=${encodeURIComponent(t)}`);
-          if (!r.ok) return [t, null] as const;
-          const j = await r.json();
-          const pct = Number(j?.quote?.changePercent);
-          return [t, Number.isFinite(pct) ? pct : null] as const;
-        } catch {
-          return [t, null] as const;
+    void (async () => {
+      const empty = Object.fromEntries(list.map((t) => [t, null] as const));
+      try {
+        const r = await fetch(
+          `/api/market/quote?symbols=${encodeURIComponent(list.join(","))}`
+        );
+        if (!r.ok) return live ? setQuotes(empty) : undefined;
+        const j = (await r.json()) as {
+          quotes?: Record<string, { changePercent?: number | null }>;
+        };
+        if (!live) return;
+        const out: Record<string, number | null> = {};
+        for (const t of list) {
+          const pct = Number(j?.quotes?.[t]?.changePercent);
+          out[t] = Number.isFinite(pct) ? pct : null;
         }
-      })
-    ).then((rows) => {
-      if (!live) return;
-      setQuotes(Object.fromEntries(rows));
-    });
+        setQuotes(out);
+      } catch {
+        if (live) setQuotes(empty);
+      }
+    })();
     return () => {
       live = false;
     };

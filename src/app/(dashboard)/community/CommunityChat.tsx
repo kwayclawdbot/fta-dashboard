@@ -26,7 +26,7 @@ import {
   X,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { getFamilyTier, type FamilyTier } from "@/lib/tier";
+import { normalizeTier, type FamilyTier } from "@/lib/tier";
 import { evaluateBadges } from "@/lib/badges";
 import { MentionProvider, RichBody } from "@/lib/mentions";
 import {
@@ -324,68 +324,72 @@ export default function CommunityChat() {
   const rosterLoaded = useRef(false);
 
   // Initial load: current user, tier (→ rooms), sidebar counts, welcome.
+  //
+  // ONE ROUND TRIP (migration 217, `get_community_chat_boot`). This was a serial
+  // chain of six: auth.getUser → profiles → family_tiers → the family's roster
+  // of profile ids → a chat_messages count over that roster → two global
+  // sidebar counts. The room rail could not even be chosen until the third hop
+  // had landed, so the surface sat on its skeleton for the whole chain.
+  //
+  // The RPC's subject is auth.uid(), so the auth hop is gone entirely, and the
+  // welcome check is one `not exists` inside Postgres instead of a roster round
+  // trip followed by a count over it. Every verdict below is unchanged.
   useEffect(() => {
     let mounted = true;
     async function load() {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const { data } = await supabase.rpc("get_community_chat_boot");
+      const boot = data as {
+        me: {
+          id: string;
+          display_name: string | null;
+          role: string | null;
+          age_group: string | null;
+          family_id: string | null;
+          avatar_url: string | null;
+          username: string | null;
+        } | null;
+        tier: string;
+        needs_welcome: boolean;
+        stats: { families: number; members: number };
+      } | null;
+      if (!mounted) return;
 
-      if (user) {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("display_name, role, age_group, family_id, avatar_url, username")
-          .eq("id", user.id)
-          .single();
-        if (profile && mounted) {
-          setMe({
-            id: user.id,
-            display_name: profile.display_name || "You",
-            role: (profile.role as Role) || "parent",
-            age_group: profile.age_group ?? null,
-            family_id: profile.family_id ?? null,
-            avatar_url: profile.avatar_url ?? null,
-            username: profile.username ?? null,
-          });
-        }
+      if (boot?.me) {
+        const p = boot.me;
+        setMe({
+          id: p.id,
+          display_name: p.display_name || "You",
+          role: (p.role as Role) || "parent",
+          age_group: p.age_group ?? null,
+          family_id: p.family_id ?? null,
+          avatar_url: p.avatar_url ?? null,
+          username: p.username ?? null,
+        });
 
         // Family tier decides which rooms are available. Free members open on
         // the Free Lounge — the members-only rail is not theirs to stand in.
-        const tier = await getFamilyTier(supabase, profile?.family_id ?? null);
-        if (mounted) {
-          setMyTier(tier);
-          setTierResolved(true);
-          if (tier === "free") setActiveRoomId(FREE_LOUNGE_ROOM_ID);
-        }
-
-        // Data-driven professional-title badges — cheap + idempotent.
-        evaluateBadges(supabase, user.id);
+        const tier = normalizeTier(boot.tier);
+        setMyTier(tier);
+        setTierResolved(true);
+        if (tier === "free") setActiveRoomId(FREE_LOUNGE_ROOM_ID);
 
         // First-post welcome: show when this family has said nothing yet.
-        if (profile?.family_id) {
-          const { data: fam } = await supabase
-            .from("profiles")
-            .select("id")
-            .eq("family_id", profile.family_id);
-          const ids = (fam || []).map((f) => f.id);
-          if (ids.length) {
-            const { count } = await supabase
-              .from("chat_messages")
-              .select("id", { count: "exact", head: true })
-              .in("user_id", ids);
-            if (mounted && (count || 0) === 0) setShowWelcome(true);
-          }
-        }
-      } else if (mounted) {
+        if (boot.needs_welcome) setShowWelcome(true);
+
+        // Data-driven professional-title badges — cheap + idempotent, and
+        // deliberately not awaited (it was not before either).
+        evaluateBadges(supabase, p.id);
+      } else {
         setTierResolved(true);
       }
 
       // Real sidebar stats (families/members are global).
-      const [{ count: families }, { count: members }] = await Promise.all([
-        supabase.from("families").select("id", { count: "exact", head: true }),
-        supabase.from("profiles").select("id", { count: "exact", head: true }),
-      ]);
-      if (mounted) setStats({ families: families || 0, members: members || 0 });
+      if (boot?.stats) {
+        setStats({
+          families: boot.stats.families || 0,
+          members: boot.stats.members || 0,
+        });
+      }
     }
     load();
     return () => {

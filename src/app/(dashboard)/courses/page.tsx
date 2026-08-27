@@ -15,7 +15,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { canAccessCourse, getFamilyTier, type FamilyTier } from "@/lib/tier";
+import { canAccessCourse, normalizeTier, type FamilyTier } from "@/lib/tier";
 import { deriveRegister } from "@/lib/register";
 import { canSeeCourse, trackForRegister } from "@/lib/courseVisibility";
 import UpsellCard from "@/components/dashboard/UpsellCard";
@@ -37,12 +37,64 @@ import UpsellCard from "@/components/dashboard/UpsellCard";
    database. No mock/fallback catalogue is used or reintroduced.
    ══════════════════════════════════════════════════════════════════════════ */
 
-interface LessonRow {
+/**
+ * ONE ROUND TRIP FOR THE CATALOGUE (migration 217, `get_courses_boot`).
+ *
+ * This page used to run FOUR SERIAL network hops — auth.getUser(), the profile,
+ * the family tier, then the catalogue — and the fourth pulled the ENTIRE
+ * curriculum for both programs, every module and every lesson, across the wire
+ * so the browser could count lessons and find the first incomplete one. The
+ * counting was the only thing it wanted.
+ *
+ * The RPC does the counting in Postgres and hands back one small row per course.
+ * `auth.getUser()` is gone entirely — the function's subject is `auth.uid()`, so
+ * there is nothing to look up first.
+ *
+ * WHAT STAYS HERE, deliberately: register → track (trackForRegister), which
+ * courses a register may SEE (canSeeCourse) and the tier gate
+ * (canAccessCourse). Those rules are shared with the lesson guard and
+ * /progress; re-expressing them in SQL would be a second copy to keep in sync.
+ * The RPC hands back exactly the two facts canSeeCourse turns on — `program`
+ * and `tracks` — and leaves the verdict here.
+ *
+ * TWO AGGREGATE FLAVOURS, because this page genuinely used two: the FIC cards
+ * count over TRACKED modules only (the old code filtered `modules.filter(m =>
+ * m.track)` before counting) while the FTA card counts over ALL of its modules.
+ */
+interface BootCourse {
   id: string;
+  slug: string;
   title: string;
+  description: string | null;
+  program: "fic" | "fta";
   sort_order: number;
-  drip_week: number;
-  is_free: boolean;
+  /** Every module track on the course — canSeeCourse's input. */
+  tracks: (string | null)[];
+  /** The course's own track label (its first tracked module). */
+  course_track: string | null;
+  has_tracked_modules: boolean;
+  /** Counted over ALL modules — the FTA card's flavour. */
+  total: number;
+  done: number;
+  next: { moduleId: string; lessonId: string; title: string } | null;
+  /** Counted over TRACKED modules only — the FIC cards' flavour. */
+  tracked_total: number;
+  tracked_done: number;
+  tracked_next: { moduleId: string; lessonId: string; title: string } | null;
+  /** Free-tier sampler lessons, already shaped. */
+  free_lessons: FreeLessonRef[];
+  locked_count: number;
+}
+
+interface CoursesBoot {
+  profile: {
+    role: string | null;
+    age_group: string | null;
+    track: string | null;
+    family_id: string | null;
+  } | null;
+  tier: string;
+  courses: BootCourse[];
 }
 
 interface FreeLessonRef {
@@ -61,26 +113,11 @@ interface LockedCourseCard {
   lockedCount: number;
 }
 
-interface ModuleRow {
-  id: string;
-  track: string | null;
-  title: string;
-  sort_order: number;
-  lessons: LessonRow[];
-}
-
-interface CourseRow {
-  id: string;
-  slug: string;
-  title: string;
-  description: string | null;
-  program: "fic" | "fta";
-  sort_order: number;
-  modules: ModuleRow[];
-}
-
 interface CourseCard {
-  course: CourseRow;
+  course: BootCourse;
+  /** The card's track — art, chip label and the "is this mine?" test. Was
+   *  `course.modules[0].track`, which is exactly what the RPC returns. */
+  track: string;
   total: number;
   done: number;
   next: { moduleId: string; lessonId: string; title: string } | null;
@@ -111,16 +148,12 @@ export default function CoursesPage() {
 
   useEffect(() => {
     async function load() {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("role, age_group, track, family_id")
-        .eq("id", user.id)
-        .single();
+      // ONE round trip for the profile, the tier and the whole counted
+      // catalogue — see BootCourse above for what replaced what.
+      const { data } = await supabase.rpc("get_courses_boot");
+      const boot = data as CoursesBoot | null;
+      if (!boot?.profile) return;
+      const profile = boot.profile;
 
       // THE REGISTER IS THE TRACK. This used to read `age_group || track ||
       // "adults"` straight off the row, which resolved a legacy `role='child'`
@@ -128,7 +161,7 @@ export default function CoursesPage() {
       // deriveRegister calls a kid. Register first, track derived from it, so
       // this page and the /courses/[slug] guard and /progress cannot disagree.
       const register = deriveRegister(profile);
-      const viewer = { register, role: profile?.role ?? null };
+      const viewer = { register, role: profile.role ?? null };
       const userTrack = trackForRegister(register);
       setTrack(userTrack);
       // Register drives what a kid should NOT see (the advanced FTA ICT cohort
@@ -136,83 +169,41 @@ export default function CoursesPage() {
       setIsKid(register === "kid");
 
       // Family membership tier drives program gating (central matrix in
-      // src/lib/tier.ts). Kids inherit the family's tier.
-      const familyTier = await getFamilyTier(supabase, profile?.family_id);
+      // src/lib/tier.ts). Kids inherit the family's tier. Same `family_tiers`
+      // column getFamilyTier() read, and the same "unrecognised reads as fic"
+      // default — it just rides the one payload now instead of costing the
+      // third of four serial hops.
+      const familyTier = normalizeTier(boot.tier);
       setTier(familyTier);
 
-      const [{ data: courses }, { data: prog }] = await Promise.all([
-        supabase
-          .from("courses")
-          .select(
-            "id, slug, title, description, program, sort_order, modules(id, track, title, sort_order, lessons(id, title, sort_order, drip_week, is_free))"
-          )
-          .in("program", ["fic", "fta"])
-          .eq("published", true)
-          .order("sort_order"),
-        supabase
-          .from("lesson_progress")
-          .select("lesson_id")
-          .eq("user_id", user.id)
-          .eq("status", "completed"),
-      ]);
+      const all = boot.courses ?? [];
 
-      const completed = new Set((prog || []).map((r) => r.lesson_id));
-
-      function toCard(course: CourseRow): CourseCard {
-        const modules = [...(course.modules || [])].sort(
-          (a, b) => a.sort_order - b.sort_order
-        );
-        let total = 0;
-        let done = 0;
-        let next: CourseCard["next"] = null;
-        for (const m of modules) {
-          const lessons = [...(m.lessons || [])].sort(
-            (a, b) => a.sort_order - b.sort_order
-          );
-          for (const l of lessons) {
-            total += 1;
-            if (completed.has(l.id)) done += 1;
-            else if (!next)
-              next = { moduleId: m.id, lessonId: l.id, title: l.title };
-          }
-        }
-        return { course, total, done, next };
+      /** FIC cards count over TRACKED modules; the FTA card over all of them. */
+      function toCard(course: BootCourse, tracked: boolean): CourseCard {
+        return {
+          course,
+          track: course.course_track || "adults",
+          total: tracked ? course.tracked_total : course.total,
+          done: tracked ? course.tracked_done : course.done,
+          next: tracked ? course.tracked_next : course.next,
+        };
       }
-
-      const all = (courses || []) as unknown as CourseRow[];
 
       // ── FREE tier: a three-lesson sampler + the rest of the catalog as locked
       //    cards with counts. Short-circuit the member layout entirely. ──
       if (familyTier === "free") {
         const samplers: FreeLessonRef[] = [];
         const locked: LockedCourseCard[] = [];
-        for (const c of all.filter((c) => c.program === "fic")) {
-          const tracked = (c.modules || []).filter((m) => m.track);
-          if (tracked.length === 0) continue;
-          const courseTrack = tracked[0]?.track || "adults";
-          let lockedCount = 0;
-          for (const m of tracked) {
-            for (const l of m.lessons || []) {
-              if (l.is_free) {
-                samplers.push({
-                  courseSlug: c.slug,
-                  moduleId: m.id,
-                  lessonId: l.id,
-                  title: l.title,
-                  track: m.track || courseTrack,
-                });
-              } else {
-                lockedCount += 1;
-              }
-            }
-          }
-          if (lockedCount > 0) {
+        for (const c of all) {
+          if (c.program !== "fic" || !c.has_tracked_modules) continue;
+          samplers.push(...(c.free_lessons ?? []));
+          if (c.locked_count > 0) {
             locked.push({
               slug: c.slug,
               title: c.title,
               description: c.description,
-              track: courseTrack,
-              lockedCount,
+              track: c.course_track || "adults",
+              lockedCount: c.locked_count,
             });
           }
         }
@@ -222,36 +213,23 @@ export default function CoursesPage() {
         return;
       }
 
-      const fic = all
-        .filter((c) => c.program === "fic")
-        .map((c) => ({
-          ...c,
-          modules: (c.modules || []).filter((m) => m.track),
-        }))
-        .filter((c) => c.modules.length > 0);
+      const fic = all.filter((c) => c.program === "fic" && c.has_tracked_modules);
 
       // WHICH COURSES THIS REGISTER MAY SEE — the one shared rule
       // (src/lib/courseVisibility.ts), which the course/lesson guard and
       // /progress call with the same viewer. Ordering stays as it was: own-track
       // course first, then the rest of the family library for whoever gets it.
       const visible = fic.filter((c) =>
-        canSeeCourse(viewer, {
-          program: "fic",
-          tracks: c.modules.map((m) => m.track),
-        })
+        canSeeCourse(viewer, { program: "fic", tracks: c.tracks })
       );
-      const mine = visible.filter((c) =>
-        c.modules.some((m) => m.track === userTrack)
-      );
-      const others = visible.filter(
-        (c) => !c.modules.some((m) => m.track === userTrack)
-      );
-      setFicCards([...mine, ...others].map(toCard));
+      const mine = visible.filter((c) => c.tracks.includes(userTrack));
+      const others = visible.filter((c) => !c.tracks.includes(userTrack));
+      setFicCards([...mine, ...others].map((c) => toCard(c, true)));
 
       const fta = all.find((c) => c.program === "fta");
       setFtaCard(
         fta && canSeeCourse(viewer, { program: "fta", tracks: [] })
-          ? toCard(fta)
+          ? toCard(fta, false)
           : null
       );
       setLoading(false);
@@ -391,8 +369,7 @@ export default function CoursesPage() {
           </div>
         ) : (
         <div className="grid md:grid-cols-2 gap-5">
-          {ficCards.map(({ course, total, done, next }) => {
-            const courseTrack = course.modules[0]?.track || "adults";
+          {ficCards.map(({ course, track: courseTrack, total, done, next }) => {
             const isOwn = courseTrack === track;
             return (
               <div
