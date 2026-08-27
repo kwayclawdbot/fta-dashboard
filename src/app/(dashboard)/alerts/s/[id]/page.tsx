@@ -4,6 +4,7 @@ import { redirect, notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getClubTier } from "@/lib/tier";
 import { deriveRegister } from "@/lib/register";
+import { getResearchPayload } from "@/lib/research/aggregate";
 import type { AlertEvent, AlertSetup, TradeAlert } from "@/lib/alerts/types";
 import SetupDetailClient from "./SetupDetailClient";
 
@@ -67,6 +68,7 @@ export default async function SetupDetailPage({
     { data: subRows },
     { data: threadRows },
     { data: relatedRows },
+    research,
   ] = await Promise.all([
     // The owning Kai briefing broadcast (narrative, label, targets) — if linked.
     setup.alert_id
@@ -97,6 +99,10 @@ export default async function SetupDetailPage({
       .eq("ticker", ticker)
       .order("fired_at", { ascending: false })
       .limit(8),
+    // The research aggregate (company, key stats, grades) — the concise
+    // ticker-detail context. A failed compose is an honest null, never a
+    // blocked page. Does NOT touch the research read meter.
+    getResearchPayload(ticker).catch(() => null),
   ]);
 
   const broadcast = (broadcastData as TradeAlert | null) ?? null;
@@ -116,6 +122,7 @@ export default async function SetupDetailPage({
       companyName={companyName}
       thread={thread}
       related={related}
+      research={research}
     />
   );
 }

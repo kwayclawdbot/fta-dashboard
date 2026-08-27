@@ -1,40 +1,47 @@
 "use client";
 
 import Link from "next/link";
+import { ChevronRight } from "lucide-react";
 import CompanyLogo from "@/components/fic/CompanyLogo";
+import { StatePill } from "@/components/alerts/board";
 import AlertLevelChart from "@/components/alerts/AlertLevelChart";
-import {
-  GlowPct,
-  KaiVoice,
-  PlanRail,
-  kaiSetupLine,
-  money,
-  tickerAccent,
-} from "@/components/alerts/poster";
-import { SETUP_STATE_META, readSetupLevels } from "@/lib/alerts/watch-ui";
+import { GlowPct, KaiVoice, money } from "@/components/alerts/poster";
+import { SETUP_STATE_META, readSetupLevels, setupStateLine } from "@/lib/alerts/watch-ui";
 import type { AlertSetup } from "@/lib/alerts/types";
 
 /* ══════════════════════════════════════════════════════════════════════════
-   SETUP POSTER — rebuilt 2026-08-10 on the owner-approved poster language
-   (cheatcode-os ShareCard vocabulary on club tokens).
+   SETUP POSTER — poster language WITH the full trade plan (owner correction
+   2026-08-10: the first poster pass stripped the information out; the card
+   was "practically empty". The aesthetic stays, the plan comes back).
 
-   The chart IS the card: the real 1-month close line drawn full-bleed as
-   the card's own ground (AlertLevelChart "bg"), with the content floating
-   ON it — logo + $TICKER top-left, ONE giant glowing move-% top-right
-   (GlowPct, since-flagged, direction-coloured), Kai's one human line, and
-   the plan as an Entry → Target rail with the stop beneath.
+   Poster kit kept: the glowing since-flagged % (GlowPct), Kai's voice as
+   typography, the Entry → Target rail. Poster kit DROPPED after the visual
+   pass on the family theme: the per-ticker hue zoo, the breathing radial,
+   the hue-tinted card frame — the card frame is neutral; the chart takes
+   the app's price colours off the real since-flagged move.
 
-   NO state chips, NO lifecycle bars, NO distance meters — heat is glow: a
-   live setup gets the per-ticker radial behind it breathing on a slow 3s
-   cycle (.poster-breathe, motion-gated); quiet cards sit flat and dim.
+   Information restored:
+     • the SMS-style marked-up chart (owner directive: the chart members
+       know from the Kai SMS/MMS alerts) — real 1h CANDLES with labelled
+       ENTRY / STOP / TARGET level lines and shaded risk/reward zones
+       (AlertLevelChart, restored), honest loading / no-bars states;
+     • the thesis — Kai's actual reason for the flag, as the KaiVoice line
+       (state line fallback when no thesis is stored);
+     • direction (long/short), Following, and the state pill;
+     • the machine-recorded "2 of 3" condition ticks when the cron stored
+       them (never fabricated);
+     • distance-to-trigger measured from the live (delayed) price;
+     • Flagged + Expires dates and the Open research link.
 
-   Two scales: `hero` (TODAY'S THREE) and quiet (the week's stack).
-   The whole poster deep-links to the setup's story (/alerts/s/[id]).
+   The whole poster deep-links to the setup's story (/alerts/s/[id]) via a
+   stretched link; Open research rides above it and keeps its destination.
 
-   HONESTY LAW: the % is only drawn when snapshot + current both exist; a
-   missing rail leg is a missing rail; no bars = no curve (the chart layer
-   simply doesn't render).
+   HONESTY LAW: every number is a stored number — a missing leg is a missing
+   object; the % is only drawn when snapshot + current both exist; no bars =
+   the stated mono line inside the chart band, never a fake curve.
    ══════════════════════════════════════════════════════════════════════════ */
+
+const DIR_GLYPH: Record<string, string> = { long: "↑", short: "↓", watch: "•" };
 
 export default function SetupGraphCard({
   s,
@@ -44,14 +51,12 @@ export default function SetupGraphCard({
 }: {
   s: AlertSetup;
   current: number | null;
-  /** TODAY'S THREE scale — bigger poster, bigger number. */
+  /** TODAY'S THREE scale — bigger poster, bigger number, taller chart. */
   hero?: boolean;
   /** The small "TODAY" mono tag (owner ruling — today's plays are marked). */
   today?: boolean;
 }) {
   const meta = SETUP_STATE_META[s.state];
-  const hue = tickerAccent(s.ticker);
-  const live = meta.live;
 
   const L = readSetupLevels(s.levels);
   const entry = s.entry;
@@ -64,38 +69,31 @@ export default function SetupGraphCard({
       ? ((current - s.snapshot_price) / s.snapshot_price) * 100
       : null;
 
+  // A stored thesis is only spoken as Kai's quote when it reads like a
+  // sentence — a bare tag like "BREAKOUT" is not a voice line.
+  const rawThesis = s.thesis?.trim() ?? "";
+  const speakableThesis =
+    rawThesis.includes(" ") && /[a-z]/.test(rawThesis) ? rawThesis : null;
+
+  // Machine-recorded conditions ("2 of 3") — rendered ONLY when present.
+  const conditions = Array.isArray(s.detail?.conditions)
+    ? (s.detail!.conditions as { label: string; met: boolean }[])
+    : [];
+  const metCount = conditions.filter((c) => c.met).length;
+
+  const pad = hero ? "p-4" : "p-3.5";
+
   return (
-    <Link
-      href={`/alerts/s/${encodeURIComponent(s.id)}`}
-      aria-label={`Open the ${s.ticker} ${meta.label.toLowerCase()} alert`}
-      className={`f0-focus f0-press relative block overflow-hidden rounded-[16px] border bg-card transition ${
-        live ? "" : "opacity-80"
-      }`}
-      style={{
-        borderColor: live
-          ? `color-mix(in srgb, ${hue} 38%, var(--sand))`
-          : "var(--sand)",
-        boxShadow: live
-          ? `0 14px 44px -20px color-mix(in srgb, ${hue} 60%, transparent)`
-          : undefined,
-      }}
-    >
-      {/* heat by glow — the accent radial behind a live card, breathing */}
-      {live && (
-        <span
-          aria-hidden
-          className="poster-glow poster-breathe absolute -right-10 -top-16 h-48 w-48 rounded-full blur-3xl"
-          style={{ background: hue }}
-        />
-      )}
+    <div className="relative overflow-hidden rounded-[16px] border border-sand bg-card transition hover:border-accent/45">
+      {/* the whole poster opens the setup's story; Open research rides above */}
+      <Link
+        href={`/alerts/s/${encodeURIComponent(s.id)}`}
+        aria-label={`Open the ${s.ticker} ${meta.label.toLowerCase()} alert`}
+        className="f0-focus absolute inset-0 z-[1] rounded-[16px]"
+      />
 
-      {/* the chart IS the card — full-bleed neon line as the ground */}
-      <AlertLevelChart variant="bg" symbol={s.ticker} accent={hue} />
-
-      <div
-        className={`relative z-[1] flex flex-col ${hero ? "min-h-[212px] p-4" : "min-h-[150px] p-3.5"}`}
-      >
-        {/* identity floats top-left · the giant number top-right */}
+      <div className={`relative flex flex-col ${pad}`}>
+        {/* identity · direction · state — the giant number top-right */}
         <div className="flex items-start gap-2.5">
           <CompanyLogo
             symbol={s.ticker}
@@ -103,8 +101,8 @@ export default function SetupGraphCard({
             size={hero ? 32 : 26}
             rounded="rounded-[9px]"
           />
-          <div className="min-w-0">
-            <div className="flex items-center gap-2">
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
               <span
                 className={`font-display font-extrabold leading-none tracking-tight text-ink ${
                   hero ? "text-[16px]" : "text-[13.5px]"
@@ -112,17 +110,21 @@ export default function SetupGraphCard({
               >
                 ${s.ticker}
               </span>
+              <span className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full bg-paper px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.1em] text-soft">
+                <span aria-hidden>{DIR_GLYPH[s.direction] ?? DIR_GLYPH.watch}</span>
+                {s.direction}
+              </span>
               {today && (
-                <span
-                  className="rounded-[6px] px-1.5 py-0.5 font-mono text-[8.5px] font-bold uppercase tracking-[0.16em]"
-                  style={{
-                    background: `color-mix(in srgb, ${hue} 16%, var(--card))`,
-                    color: hue,
-                  }}
-                >
+                <span className="rounded-[6px] bg-gold-700/10 px-1.5 py-0.5 font-mono text-[8.5px] font-bold uppercase tracking-[0.16em] text-gold-700">
                   Today
                 </span>
               )}
+              {s.subscribed && (
+                <span className="inline-flex items-center rounded-full bg-kai-500/10 px-2 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.1em] text-kai-600">
+                  Following
+                </span>
+              )}
+              <StatePill tone={meta.tone} label={meta.label} live={meta.live} />
             </div>
             {px != null && (
               <p className="mt-1 font-mono text-[10.5px] font-medium leading-none tabular-nums text-soft">
@@ -130,42 +132,152 @@ export default function SetupGraphCard({
               </p>
             )}
           </div>
-          <div className="ml-auto shrink-0 text-right">
-            {movePct != null ? (
-              <>
-                <GlowPct value={movePct} size={hero ? 46 : 32} />
-                <p className="mt-1 font-mono text-[8.5px] uppercase tracking-[0.16em] text-soft/70">
-                  Since flagged
-                </p>
-              </>
-            ) : null}
-          </div>
+          {movePct != null && (
+            <div className="ml-auto shrink-0 pl-3 text-right">
+              <GlowPct value={movePct} size={hero ? 34 : 26} />
+              <p className="mt-1 font-mono text-[8.5px] uppercase tracking-[0.16em] text-soft/70">
+                Since flagged
+              </p>
+            </div>
+          )}
         </div>
 
-        {/* Kai's one human line — state as voice, never a chip */}
-        <KaiVoice size={hero ? "md" : "sm"} className="mt-auto pt-4">
-          {kaiSetupLine(s)}
-        </KaiVoice>
-
-        {/* the plan as a rail — only the legs this setup genuinely stores */}
-        {entry != null && target != null && (
-          <PlanRail
-            className="mt-3"
-            from={{ label: "Entry", value: entry }}
-            to={{ label: "Target", value: target, color: "var(--color-price-up)" }}
-            stop={stop}
-            accent={hue}
-          />
+        {/* Kai's reason for the flag — quoted ONLY when the stored thesis
+            actually reads like a sentence; a raw tag ("BREAKOUT") falls back
+            to the human state line, unquoted */}
+        {speakableThesis ? (
+          <KaiVoice
+            size={hero ? "md" : "sm"}
+            className={`mt-3 ${hero ? "line-clamp-3" : "line-clamp-2"}`}
+          >
+            {speakableThesis}
+          </KaiVoice>
+        ) : (
+          <p className={`mt-3 text-ink/85 ${hero ? "text-[13px]" : "text-[12px]"} leading-[1.5]`}>
+            {setupStateLine(s.state, s.ticker)}
+          </p>
         )}
 
-        <p className="mt-3 font-mono text-[8.5px] uppercase tracking-[0.14em] text-soft/60">
-          Flagged{" "}
-          {new Date(s.created_at).toLocaleDateString(undefined, {
-            month: "short",
-            day: "numeric",
-          })}
-        </p>
+        {/* the SMS-style marked-up chart — 1h candles + labelled ENTRY/STOP/
+            TARGET lines + shaded risk/reward zones, all from stored numbers */}
+        <div className="mt-3">
+          <AlertLevelChart
+            symbol={s.ticker}
+            entry={entry}
+            stop={stop}
+            target={target}
+            tf="1h"
+          />
+        </div>
+
+        {/* the machine-recorded conditions — the honest "2 of 3", ticks only
+            when the cron genuinely stored them */}
+        {conditions.length > 0 && (
+          <div className="mt-3">
+            <p className="font-mono text-[9px] font-semibold uppercase tracking-[0.14em] text-soft/80">
+              {metCount} of {conditions.length} conditions
+            </p>
+            <ul className="mt-1.5 space-y-1">
+              {conditions.map((c) => (
+                <li
+                  key={c.label}
+                  className={`flex items-center gap-1.5 text-[11.5px] leading-[1.35] ${
+                    c.met ? "text-ink/90" : "text-soft"
+                  }`}
+                >
+                  <span
+                    aria-hidden
+                    className={`font-mono text-[10px] ${c.met ? "text-price-up" : "text-soft/60"}`}
+                  >
+                    {c.met ? "✓" : "○"}
+                  </span>
+                  {c.label}
+                  <span className="sr-only">{c.met ? " — met" : " — not yet"}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* distance to trigger — live price measured against the stored entry */}
+        {meta.developing && entry != null && px != null && (
+          <TriggerDistance entry={entry} stop={stop} current={px} direction={s.direction} />
+        )}
+
+        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t border-sand pt-2.5">
+          <span className="font-mono text-[8.5px] uppercase tracking-[0.14em] text-soft/60">
+            Flagged{" "}
+            {new Date(s.created_at).toLocaleDateString(undefined, {
+              month: "short",
+              day: "numeric",
+            })}
+          </span>
+          <span className="font-mono text-[8.5px] uppercase tracking-[0.14em] text-soft/60">
+            Expires{" "}
+            {new Date(s.expires_at).toLocaleDateString(undefined, {
+              month: "short",
+              day: "numeric",
+            })}
+          </span>
+          <Link
+            href={`/research/${encodeURIComponent(s.ticker)}`}
+            className="relative z-[2] ml-auto inline-flex items-center gap-1 text-[12px] font-semibold text-gold-700 transition hover:text-gold-600"
+          >
+            Open research <ChevronRight className="h-3.5 w-3.5" />
+          </Link>
+        </div>
       </div>
-    </Link>
+    </div>
+  );
+}
+
+/* ── distance-to-trigger: live price measured against the stored entry ───── */
+function TriggerDistance({
+  entry,
+  stop,
+  current,
+  direction,
+}: {
+  entry: number;
+  stop: number | null;
+  current: number;
+  direction: string;
+}) {
+  const past = direction === "short" ? current <= entry : current >= entry;
+  const dist = Math.abs(entry - current);
+  const awayPct = current > 0 ? (dist / current) * 100 : 0;
+
+  // Position along the stop→entry approach leg (0 at stop, 1 at entry). The
+  // ratio is direction-agnostic; only drawn when the stop leg is stored.
+  let pos: number | null = null;
+  if (stop != null && stop !== entry) {
+    pos = Math.max(0, Math.min(1, (current - stop) / (entry - stop)));
+  }
+
+  return (
+    <div className="mt-2.5">
+      {pos != null && (
+        <div
+          role="img"
+          aria-label={
+            past
+              ? "Price is at or past the trigger level"
+              : `Price is ${Math.round(pos * 100)} percent of the way from the stop to the trigger level`
+          }
+          className="h-[5px] overflow-hidden rounded-[3px] bg-sand"
+        >
+          <span
+            aria-hidden
+            className="block h-full rounded-[3px] bg-volt-500"
+            style={{ width: `${(past ? 1 : pos) * 100}%` }}
+          />
+        </div>
+      )}
+      <p className="mt-1.5 font-mono text-[10px] uppercase tracking-[0.1em] text-soft/80">
+        {past
+          ? "At the trigger level"
+          : `$${money(dist)} to trigger · ${awayPct.toFixed(1)}% away`}
+      </p>
+    </div>
   );
 }

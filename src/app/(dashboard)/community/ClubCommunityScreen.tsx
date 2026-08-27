@@ -460,11 +460,32 @@ export default function ClubCommunityScreen({ seed, circles }: Props) {
           </h1>
         </header>
 
-        {/* ── the neon ring row — open Circles only; no Circles, no row ── */}
-        {circles.length > 0 && (
-          <div className="mt-4 flex items-start justify-between gap-3">
-            <div className="-mx-1 flex flex-1 gap-3 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              {circles.map((c, i) => {
+        {/* ── the neon ring row — the screen's drawn structure holds even at
+               zero: expired clocks collapse the rings to ONE honest dashed
+               "Start a Circle" affordance, never an absent row (owner
+               correction 2026-08-10: the page read as gutted when every
+               Circle ran out its 30 days) ── */}
+        <div className="mt-4 flex items-start justify-between gap-3">
+          <div className="-mx-1 flex flex-1 gap-3 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {circles.length === 0 && (
+              <Link href="/circles" className="f0-focus w-[72px] shrink-0 text-center">
+                <span
+                  aria-hidden
+                  className="mx-auto grid h-[64px] w-[64px] place-items-center rounded-full border-2 border-dashed border-sand"
+                >
+                  <span className="grid h-[48px] w-[48px] place-items-center rounded-full bg-card font-display text-[22px] font-black leading-none text-gold-700">
+                    +
+                  </span>
+                </span>
+                <span className="mt-1.5 block truncate font-display text-[12px] font-bold text-ink">
+                  Start one
+                </span>
+                <span className="block truncate font-mono text-[9.5px] font-semibold uppercase tracking-[0.06em] text-soft">
+                  No Circle open
+                </span>
+              </Link>
+            )}
+            {circles.map((c, i) => {
                 const left = timeLeft(c.expires_at);
                 return (
                   <CircleRing
@@ -493,7 +514,6 @@ export default function ClubCommunityScreen({ seed, circles }: Props) {
               Circles
             </Link>
           </div>
-        )}
 
         {/* ── For You · Following · Trending ── */}
         <div role="tablist" aria-label="Community feed" className="mt-4 flex gap-7 border-b border-sand">

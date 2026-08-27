@@ -101,12 +101,15 @@ export default function Avatar({
 
   // Metallic FTA frame: a gradient gold band with a thin page-bg gap — a
   // "double ring" that reads as premium metal, never a flat belt color.
+  // h-fit on every wrapper: as a flex item the span would otherwise STRETCH
+  // to the row's height (composer rows, feed rows), reading as a tall oval
+  // ring with the belt dot detached beneath the photo.
   const framed = isFta ? (
     <span
       title="Family Trading Academy"
-      className="inline-flex shrink-0 rounded-full bg-gradient-to-br from-gold-200 via-gold-500 to-gold-700 p-[2px] shadow-[0_0_0_1px_rgba(180,120,10,0.35)]"
+      className="inline-flex h-fit shrink-0 rounded-full bg-gradient-to-br from-gold-200 via-gold-500 to-gold-700 p-[2px] shadow-[0_0_0_1px_rgba(180,120,10,0.35)]"
     >
-      <span className="inline-flex rounded-full bg-paper p-[1.5px]">{inner}</span>
+      <span className="inline-flex h-fit rounded-full bg-paper p-[1.5px]">{inner}</span>
     </span>
   ) : (
     inner
@@ -116,7 +119,7 @@ export default function Avatar({
 
   const belt = BELTS[resolvedBelt];
   return (
-    <span className="relative inline-flex shrink-0">
+    <span className="relative inline-flex h-fit shrink-0">
       {framed}
       {/* Belt corner dot — ringed in the page background so it reads on any
           avatar; white/black belts carry their own border for contrast. */}
