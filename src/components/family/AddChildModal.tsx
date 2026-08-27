@@ -185,6 +185,7 @@ export default function AddChildModal({ mode, onClose, onAdded }: Props) {
   return (
     <AnimatePresence>
       <mm.div
+        key="scrim"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -192,6 +193,7 @@ export default function AddChildModal({ mode, onClose, onAdded }: Props) {
         className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
       />
       <mm.div
+        key="dialog"
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: 16 }}
