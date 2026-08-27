@@ -41,6 +41,17 @@ export const LEADERBOARD_DENYLIST: readonly string[] = [
   "canvasb-proof",
   "cardtest",
   "cardtest2",
+  // The V2 Demo Club household (@cheatcode-qa.dev, minted 2026-07-28 to dress
+  // the redesigned feed). None of the six has EVER signed in, yet they carried
+  // 250–3,400 XP onto the public board next to real members. Their content is
+  // removed by .planning/PURGE-SEED-SOCIAL-20260731.sql; this list is the code
+  // half, so the board stays honest even if a fixture row is ever re-seeded.
+  "datadive",
+  "deshawnk",
+  "jcharts",
+  "mayainvests",
+  "optionsog",
+  "tiffanyr",
   "demo club member",
   "demo family parent",
   "demo kid",
