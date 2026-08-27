@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { Radio, CalendarClock, History } from "lucide-react";
+import Link from "next/link";
+import { Radio, CalendarClock, History, ArrowRight } from "lucide-react";
 import { EditorialSection } from "@/components/grammar";
 import { LiveEventCard } from "@/components/live";
 import type { LiveEvent } from "@/lib/clubhome/live-events";
@@ -40,15 +41,30 @@ export default function ClubLiveTab({
     return () => clearTimeout(t);
   }, [focusId, events.length]);
 
-  // Wrap the deep-link target so it can be scrolled to / highlighted.
-  const renderCard = (e: LiveEvent) =>
-    e.id === focusId ? (
-      <div key={e.id} ref={focusRef} className="transition-shadow">
+  // Wrap the deep-link target so it can be scrolled to / highlighted. Live
+  // rooms get an "Enter the room →" link into the real room page (board 13).
+  const renderCard = (e: LiveEvent) => {
+    const card = (
+      <div className="space-y-1.5">
         <LiveEventCard event={e} />
+        {e.status === "live" && (
+          <Link
+            href={`/community/live/${encodeURIComponent(e.id)}`}
+            className="inline-flex items-center gap-1 px-1 font-display text-[13px] font-bold text-volt-700 hover:text-volt-600"
+          >
+            Enter the room <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
+        )}
+      </div>
+    );
+    return e.id === focusId ? (
+      <div key={e.id} ref={focusRef} className="transition-shadow">
+        {card}
       </div>
     ) : (
-      <LiveEventCard key={e.id} event={e} />
+      <div key={e.id}>{card}</div>
     );
+  };
 
   if (events.length === 0) {
     return (
